@@ -57,13 +57,31 @@ SHORT · INVALIDATED`.
 
 ## 2. Installation
 
-1. Open TradingView → **Pine Editor**.
-2. Create a new **Indicator** and paste the whole content of `XAUUSD_Smart_Entry_Engine.pine`.
-3. **Save** and **Add to chart**.
-4. Recommended chart: **XAUUSD, 5-minute** (execution timeframe). The indicator reads
+1. Download the **raw** file (GitHub → *Raw*, or `git clone`), not a rendered preview.
+2. Open TradingView → **Pine Editor** → new **Indicator**, paste the whole file, **Save**, **Add to chart**.
+3. Recommended chart: **XAUUSD, 5-minute** (execution timeframe). The indicator reads
    H4 / H1 / M15 internally, no matter what chart you are on.
-5. Create alerts with *Alert → Condition → "XAUUSD Smart Entry Engine" → "Any alert() function call"*
+4. Create alerts with *Alert → Condition → "XAUUSD Smart Entry Engine" → "Any alert() function call"*
    (one alert is enough — every message is dynamic and self-describing).
+
+### Whitespace, pasting and line numbers
+
+Pine blocks are **indentation based**, and TradingView's editor strips blank lines, so:
+
+* **Never let the leading spaces be eaten.** This file uses **4 spaces per level, no tabs**.
+  If a paste path collapses runs of spaces, every `if` / `for` body ends up at column 0 and
+  nothing compiles. Fixes, in order:
+  1. paste from the **raw** file (not from a rendered HTML preview or a chat message), or
+  2. use **`XAUUSD_Smart_Entry_Engine.tabs.pine`** — a byte-identical copy that uses
+     **one tab per level**; tabs survive paste paths that eat spaces, or
+  3. if all indentation is gone, ask for a re-indented copy.
+* The file is formatted so that **every continuation line sits inside parentheses or after an
+  operator**, and every statement-start indent is a multiple of 4 — so a re-indent by the editor
+  keeps the block structure intact.
+* **Line numbers will not match.** TradingView removes the file's 131 blank lines, so an error at
+  TradingView line `N` sits around file line `N + (blank lines before it)`. Easier: search for the
+  **section header** (`// 11 -` = state machine, `// 7 -` = liquidity + sweeps, …), or paste the
+  error text — the code around it identifies the spot, not the number.
 
 ---
 
@@ -181,6 +199,7 @@ risk management.
 ## 10. Repository layout
 
 ```
-XAUUSD_Smart_Entry_Engine.pine   ← the complete indicator (single file, commented by section)
-README.md                        ← this document
+XAUUSD_Smart_Entry_Engine.pine        ← the indicator (single file, commented by section, 4-space indent)
+XAUUSD_Smart_Entry_Engine.tabs.pine   ← identical code, tab indentation (paste fallback)
+README.md                             ← this document
 ```
