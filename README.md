@@ -75,13 +75,16 @@ Pine blocks are **indentation based**, and TradingView's editor strips blank lin
   2. use **`XAUUSD_Smart_Entry_Engine.tabs.pine`** — a byte-identical copy that uses
      **one tab per level**; tabs survive paste paths that eat spaces, or
   3. if all indentation is gone, ask for a re-indented copy.
-* The file is formatted so that **every continuation line sits inside parentheses or after an
-  operator**, and every statement-start indent is a multiple of 4 — so a re-indent by the editor
-  keeps the block structure intact.
-* **Line numbers will not match.** TradingView removes the file's 131 blank lines, so an error at
+* **Every statement is on one line — nothing is ever wrapped.** Pine's continuation rule is
+  indentation based (a wrapped line must be indented *more* than the statement it belongs to),
+  and that is what produces `Syntax error at input "end of line without line continuation"`.
+  With no wrapped lines at all, the only indentation the compiler reads is block indentation:
+  one level of 4 spaces per `if` / `for` / `else` / function body. Every statement-start indent
+  is a multiple of 4, so an editor re-indent keeps the block structure intact.
+* **Line numbers will not match.** TradingView removes the file's blank lines, so an error at
   TradingView line `N` sits around file line `N + (blank lines before it)`. Easier: search for the
   **section header** (`// 11 -` = state machine, `// 7 -` = liquidity + sweeps, …), or paste the
-  error text — the code around it identifies the spot, not the number.
+  error text — the token and column identify the spot, not the number.
 
 ---
 
@@ -202,4 +205,18 @@ risk management.
 XAUUSD_Smart_Entry_Engine.pine        ← the indicator (single file, commented by section, 4-space indent)
 XAUUSD_Smart_Entry_Engine.tabs.pine   ← identical code, tab indentation (paste fallback)
 README.md                             ← this document
+tools/tvline.py                       ← maps a TradingView error line/column back to a file line
+tools/onestmt.py                      ← rewrites the file so every statement is on one physical line
+tools/totabs.py                       ← regenerates the tab-indented copy
+tools/verify.py                       ← static checks (indent, brackets, UDT arity, no strategy.*, …)
+```
+
+The three `tools/` scripts are the ones that were used to chase the compile errors reported by
+TradingView; they are kept in the repo so the same checks can be re-run after any edit:
+
+```
+python3 tools/verify.py       # all invariants: indentation, brackets, UDT arity, indicator-only
+python3 tools/onestmt.py XAUUSD_Smart_Entry_Engine.pine
+python3 tools/totabs.py
+python3 tools/tvline.py --token <token> --col <column>
 ```
