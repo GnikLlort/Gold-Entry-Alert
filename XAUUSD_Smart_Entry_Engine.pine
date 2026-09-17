@@ -723,9 +723,9 @@ bool newsRisk  = f_newsRisk()
     [ta.pivothigh(high, iIntLen, iIntLen), ta.pivotlow(low, iIntLen, iIntLen), close, high, low],
     lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
 
-[int b1, float b1SH, float b1SL] = f_bias(h1PH, h1PL, h1C)
-[int b2, float b2SH, float b2SL] = f_bias(h2PH, h2PL, h2C)
-[int bS, float sSH,  float sSL]  = f_bias(sPH,  sPL,  sC)
+[b1, b1SH, b1SL] = f_bias(h1PH, h1PL, h1C)
+[b2, b2SH, b2SL] = f_bias(h2PH, h2PL, h2C)
+[bS, sSH,  sSL]  = f_bias(sPH,  sPL,  sC)
 
 string alignTxt = (b1 == 1 and b2 == 1) ? "BULLISH" : (b1 == -1 and b2 == -1) ? "BEARISH" :
     (b1 == 0 and b2 == 0) ? "NEUTRAL" : "MIXED"
