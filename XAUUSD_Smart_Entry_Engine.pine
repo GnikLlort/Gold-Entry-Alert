@@ -439,6 +439,8 @@ f_lvlSet(array<Lvl> lv, string nm, float p, int kind) =>
             Lm.kind := kind
         else
             array.push(lv, Lvl.new(nm, p, kind, 0, bar_index, na, 1, false, na, na))
+    bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
+    _r
 
 // Add a dynamic (swing / equal high-low) level, merging close levels into a cluster.
 f_lvlDyn(array<Lvl> lv, string nm, float p, int kind, float tol) =>
@@ -456,6 +458,8 @@ f_lvlDyn(array<Lvl> lv, string nm, float p, int kind, float tol) =>
                 break
         if not merged
             array.push(lv, Lvl.new(nm, p, kind, 0, bar_index, na, 1, true, na, na))
+    bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
+    _r
 
 // Create a fresh setup record.
 f_newSetup(int dir, int state, string nm, float lp, float ext, int swBar, float mssLvl, float invLvl) =>
@@ -505,6 +509,8 @@ f_kill(Setup S) =>
     if not na(S.lbSetup)
         label.delete(S.lbSetup)
         S.lbSetup := na
+    bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
+    _r
 
 // Freeze the drawing objects of a finished setup so the history stays readable.
 f_freeze(Setup S) =>
@@ -527,6 +533,8 @@ f_freeze(Setup S) =>
         line.set_x2(S.lnTp2, bar_index)
     if not na(S.lnTp3)
         line.set_x2(S.lnTp3, bar_index)
+    bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
+    _r
 
 // Draw the complete analytical trade map for an armed setup.
 f_draw(Setup S) =>
@@ -563,6 +571,8 @@ f_draw(Setup S) =>
                 S.bxRisk := box.new(x0, S.entry, bar_index, S.sl, xloc = xloc.bar_index, border_color = color.new(cBear, 60), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(cBear, 90))
             if na(S.bxRew) and not na(S.tp1)
                 S.bxRew := box.new(x0, S.tp1, bar_index, S.entry, xloc = xloc.bar_index, border_color = color.new(cBull, 60), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(cBull, 92))
+    bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
+    _r
 
 // Keep the drawing objects of a live setup glued to the current bar.
 f_push(Setup S) =>
@@ -597,6 +607,8 @@ f_push(Setup S) =>
     if not na(S.lbTp3)
         label.set_xy(S.lbTp3, bar_index, S.tp3)
         label.set_text(S.lbTp3, str.format("{0}TP3\n{1}", S.t3 ? "TP3 HIT " : "", f_px(S.tp3)))
+    bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
+    _r
 
 // ==================================================================================================
 // 4 - CORE CALCULATIONS  (chart timeframe = execution timeframe)
@@ -701,6 +713,8 @@ f_sessBox(bool newS, bool endS, float hi, float lo, string nm, color col) =>
                 box.delete(array.shift(sessBx))
             while array.size(sessLb) > 9
                 label.delete(array.shift(sessLb))
+    bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
+    _r
 
 f_sessBox(newAsia, endAsia, aHi, aLo, "ASIA",   color.new(#5c6bc0, 0))
 f_sessBox(newLon,  endLon,  lHi, lLo, "LONDON", color.new(#26c6da, 0))
@@ -946,6 +960,8 @@ f_makeOb(int dir, float obTop, float obBot, int obBar) =>
             if iVLabels
                 olb := label.new(obBar, dir == 1 ? obTop : obBot, dir == 1 ? "BULL OB" : "BEAR OB", xloc = xloc.bar_index, yloc = yloc.price, color = color.new(oc, 25), style = label.style_label_left, size = size.tiny)
         array.push(obs, Ob.new(dir, obTop, obBot, obBar, false, obx, olb))
+    bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
+    _r
 
 if runEng and iShowOb
     if dispUp

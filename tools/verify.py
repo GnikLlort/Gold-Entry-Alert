@@ -21,6 +21,11 @@ Checked:
   11. every `X.field` access uses a real field of that type
   12. every user function is defined before its first use
   13. the tabs copy is token-identical to the spaces copy
+  14. no function ends with an `if` / `for` / `while` / `switch` block: the last
+      statement of a function body is its implicit return, and Pine then
+      requires every branch of that block (and of every block nested at the end
+      of its branches) to share one type - "Return type of one of the `if` ...
+      blocks is not compatible"
 
 Usage:  python3 tools/verify.py [FILE] [TABS_FILE]
 """
@@ -177,6 +182,38 @@ for fn, ln in defs.items():
             chk(i + 1 < ln and not l.strip().startswith("//"),
                 "12. %s() used on line %d but defined on line %d" % (fn, i + 1, ln))
             break
+
+# 14  no block in a function's return position --------------------------------
+BLK = re.compile(r"^\s*(if|else|for|while|switch)\b")
+
+
+def _ind(i):
+    return len(lines[i]) - len(lines[i].lstrip())
+
+
+def _body(i):
+    base, j, out = _ind(i), i + 1, []
+    while j < len(lines):
+        if lines[j].strip() and _ind(j) <= base:
+            break
+        out.append(j)
+        j += 1
+    return out
+
+
+def _last_stmt(body):
+    if not body:
+        return None
+    base = min(_ind(j) for j in body)
+    return [j for j in body if _ind(j) == base][-1]
+
+
+for i, l in enumerate(lines):
+    if re.match(r"^\w+\s*\(", l) and l.rstrip().endswith("=>"):
+        ls = _last_stmt(_body(i))
+        chk(ls is not None and BLK.match(lines[ls]) is not None,
+            "14. function on line %d ends with a block (line %d) - Pine would type-check its "
+            "branches: add a placeholder return" % (i + 1, (ls or 0) + 1))
 
 # 13  tabs copy identical -----------------------------------------------------
 try:
