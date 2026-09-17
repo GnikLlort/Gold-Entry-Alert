@@ -36,6 +36,17 @@
 //  "SETUP QUALITY: 85/100" is a CONFLUENCE SCORE, not a probability of profit.
 //  Nothing here is a guarantee. Suggested entries are hypothetical / analytical only.
 //
+//  WHITESPACE / PASTING
+//  --------------------
+//  Pine blocks are INDENTATION BASED. This file uses 4 spaces per level - never tabs.
+//  If your paste path eats leading spaces, the script will not compile (every `if` / `for`
+//  body would sit at column 0). Two ways out:
+//     1. paste from the RAW file (GitHub -> Raw / download), not from a rendered preview, or
+//     2. use the tab-indented copy, XAUUSD_Smart_Entry_Engine.tabs.pine (same code, 1 tab
+//        per level) - tabs survive paste paths that collapse runs of spaces.
+//  TradingView also strips blank lines, so its line numbers will NOT match this file's.
+//  To jump to a section, search for its header, e.g. "// 11 -" for the state machine.
+//
 //  CODE MAP
 //  --------
 //   1  INPUTS                    9   ORDER BLOCKS
@@ -50,7 +61,7 @@
 // ==================================================================================================
 
 indicator(title = "XAUUSD Smart Entry Engine", shorttitle = "XAU-SMART-ENTRY", overlay = true,
-     max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, max_bars_back = 1000)
+    max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, max_bars_back = 1000)
 
 // ==================================================================================================
 // 1 - INPUTS
@@ -60,9 +71,9 @@ indicator(title = "XAUUSD Smart Entry Engine", shorttitle = "XAU-SMART-ENTRY", o
 string gGEN = "01 - GENERAL"
 bool   iOn          = input.bool(true,   "Enable engine", group = gGEN)
 string iSens        = input.string("Balanced", "Signal sensitivity",
-                          options = ["Aggressive", "Balanced", "Conservative"], group = gGEN,
-                          tooltip = "Aggressive = HTF bias not required. Balanced = HTF must not " +
-                          "oppose the trade. Conservative = both HTFs must agree with the trade.")
+    options = ["Aggressive", "Balanced", "Conservative"], group = gGEN,
+    tooltip = "Aggressive = HTF bias not required. Balanced = HTF must not " +
+    "oppose the trade. Conservative = both HTFs must agree with the trade.")
 bool   iShowDash    = input.bool(true,  "Show dashboard", group = gGEN)
 bool   iShowStory   = input.bool(true,  "Show Market Story panel", group = gGEN)
 bool   iShowInfo    = input.bool(true,  "Show detailed info panel", group = gGEN)
@@ -73,13 +84,13 @@ int    iVisBars     = input.int(350, "Keep visuals for (bars)", minval = 50, max
 // -- 1.2 Timeframes -------------------------------------------------------------------------------
 string gTF  = "02 - TIMEFRAMES"
 string iHTF1 = input.timeframe("240", "HTF 1  - macro bias",
-                   options = ["60", "120", "180", "240", "480", "D", "W"], group = gTF)
+    options = ["60", "120", "180", "240", "480", "D", "W"], group = gTF)
 string iHTF2 = input.timeframe("60",  "HTF 2  - directional bias",
-                   options = ["15", "30", "60", "120", "240", "D"], group = gTF)
+    options = ["15", "30", "60", "120", "240", "D"], group = gTF)
 string iTFS  = input.timeframe("15",  "Structure timeframe  - internal swings / MSS",
-                   options = ["5", "10", "15", "30", "60"], group = gTF)
+    options = ["5", "10", "15", "30", "60"], group = gTF)
 string iTFE  = input.timeframe("5",   "Execution timeframe  - informational (run the chart on it)",
-                   options = ["1", "2", "3", "5", "10", "15"], group = gTF)
+    options = ["1", "2", "3", "5", "10", "15"], group = gTF)
 
 // -- 1.3 Market structure -------------------------------------------------------------------------
 string gST = "03 - MARKET STRUCTURE"
@@ -99,29 +110,29 @@ bool  iShowSessL = input.bool(true,  "Show session liquidity (Asia / London / NY
 bool  iShowSwing = input.bool(true,  "Show swing liquidity", group = gLQ)
 bool  iMergeEq   = input.bool(true,  "Merge equal highs / equal lows into clusters", group = gLQ)
 float iEqTol     = input.float(0.25, "Equal high / low tolerance (x ATR)", minval = 0.02, maxval = 5,
-                        step = 0.05, group = gLQ)
+    step = 0.05, group = gLQ)
 float iAppATR    = input.float(1.00, "Approach distance (x ATR)", minval = 0.1, maxval = 5,
-                        step = 0.1, group = gLQ)
+    step = 0.1, group = gLQ)
 float iSweepATR  = input.float(0.10, "Minimum sweep penetration (x ATR)", minval = 0.0, maxval = 2,
-                        step = 0.01, group = gLQ,
-                        tooltip = "Gold specific: random wicks are filtered out with an ATR-relative " +
-                        "penetration test so every wick is not called a sweep.")
+    step = 0.01, group = gLQ,
+    tooltip = "Gold specific: random wicks are filtered out with an ATR-relative " +
+    "penetration test so every wick is not called a sweep.")
 float iSweepAbs  = input.float(0.20, "Minimum sweep penetration (price units)", minval = 0.0,
-                        step = 0.05, group = gLQ)
+    step = 0.05, group = gLQ)
 int   iSwConfirm = input.int(2, "Bars allowed to close back through the level", minval = 1,
-                        maxval = 10, group = gLQ,
-                        tooltip = "If price does not close back through the level within this many " +
-                        "bars the level is marked BROKEN, not SWEPT.")
+    maxval = 10, group = gLQ,
+    tooltip = "If price does not close back through the level within this many " +
+    "bars the level is marked BROKEN, not SWEPT.")
 int   iMaxDyn    = input.int(20, "Maximum dynamic (swing) levels kept", minval = 4, maxval = 60, group = gLQ)
 
 // -- 1.5 Fair value gap ---------------------------------------------------------------------------
 string gFV = "05 - FAIR VALUE GAP"
 float iFvgATR = input.float(0.15, "Minimum FVG size (x ATR)", minval = 0.0, maxval = 3,
-                    step = 0.01, group = gFV)
+    step = 0.01, group = gFV)
 float iFvgAbs = input.float(0.10, "Minimum FVG size (price units)", minval = 0.0, step = 0.05, group = gFV)
 string iEpct  = input.string("50%", "Entry depth inside FVG",
-                    options = ["25%", "50%", "62%", "75%", "100%"], group = gFV,
-                    tooltip = "25% = shallow (near the near edge of the gap), 100% = far edge.")
+    options = ["25%", "50%", "62%", "75%", "100%"], group = gFV,
+    tooltip = "25% = shallow (near the near edge of the gap), 100% = far edge.")
 int   iFvgAge = input.int(120, "Maximum FVG age (bars)", minval = 10, maxval = 2000, group = gFV)
 bool  iFvgExt = input.bool(true, "Extend FVGs until filled", group = gFV)
 int   iMaxFvg = input.int(25, "Maximum FVG boxes drawn", minval = 0, maxval = 100, group = gFV)
@@ -129,10 +140,10 @@ int   iMaxFvg = input.int(25, "Maximum FVG boxes drawn", minval = 0, maxval = 10
 // -- 1.6 Sessions ---------------------------------------------------------------------------------
 string gSE = "06 - SESSIONS"
 string iTz = input.string("UTC", "Session timezone",
-                 options = ["UTC", "America/New_York", "Europe/London", "Europe/Berlin", "Asia/Tokyo",
-                  "Asia/Singapore", "Australia/Sydney"], group = gSE,
-                 tooltip = "Session times are evaluated in this timezone, so daylight saving changes " +
-                 "are handled by TradingView and no fixed local clock is assumed.")
+    options = ["UTC", "America/New_York", "Europe/London", "Europe/Berlin", "Asia/Tokyo",
+    "Asia/Singapore", "Australia/Sydney"], group = gSE,
+    tooltip = "Session times are evaluated in this timezone, so daylight saving changes " +
+    "are handled by TradingView and no fixed local clock is assumed.")
 string iAsia = input.session("0000-0700", "Asia session",     group = gSE)
 string iLon  = input.session("0700-1200", "London session",   group = gSE)
 string iNy   = input.session("1200-2000", "New York session", group = gSE)
@@ -147,28 +158,28 @@ string gVO = "07 - VOLATILITY"
 int   iAtrLen  = input.int(14, "ATR length", minval = 2, maxval = 200, group = gVO)
 int   iVolRef  = input.int(100, "Volatility reference length", minval = 20, maxval = 500, group = gVO)
 float iVolLow  = input.float(0.70, "LOW volatility threshold (x reference)", minval = 0.1, maxval = 1,
-                     step = 0.05, group = gVO)
+    step = 0.05, group = gVO)
 float iVolHigh = input.float(1.30, "HIGH volatility threshold (x reference)", minval = 1, maxval = 3,
-                     step = 0.05, group = gVO)
+    step = 0.05, group = gVO)
 float iVolExt  = input.float(1.80, "EXTREME volatility threshold (x reference)", minval = 1, maxval = 5,
-                     step = 0.05, group = gVO)
+    step = 0.05, group = gVO)
 float iMinVol  = input.float(0.35, "Minimum volatility allowed for a setup (x reference)",
-                     minval = 0, maxval = 2, step = 0.05, group = gVO)
+    minval = 0, maxval = 2, step = 0.05, group = gVO)
 float iMaxVol  = input.float(2.20, "Maximum volatility allowed for a setup (x reference)",
-                     minval = 0.5, maxval = 5, step = 0.05, group = gVO)
+    minval = 0.5, maxval = 5, step = 0.05, group = gVO)
 float iDispMult = input.float(1.20, "Displacement range multiplier (x ATR)", minval = 0.5, maxval = 5,
-                     step = 0.05, group = gVO)
+    step = 0.05, group = gVO)
 float iBodyR   = input.float(0.50, "Displacement minimum body / range ratio", minval = 0.1, maxval = 1,
-                     step = 0.05, group = gVO)
+    step = 0.05, group = gVO)
 float iCloseP  = input.float(0.60, "Displacement close position inside range", minval = 0.3, maxval = 1,
-                     step = 0.05, group = gVO)
+    step = 0.05, group = gVO)
 
 // -- 1.8 Entry ------------------------------------------------------------------------------------
 string gEN = "08 - ENTRY"
 string iEntryMode = input.string("Balanced", "Entry confirmation mode",
-                        options = ["Aggressive", "Balanced", "Confirmation"], group = gEN,
-                        tooltip = "Aggressive = touch of the entry level. Balanced = touch + " +
-                        "rejection candle. Confirmation = touch + rejection candle + micro MSS.")
+    options = ["Aggressive", "Balanced", "Confirmation"], group = gEN,
+    tooltip = "Aggressive = touch of the entry level. Balanced = touch + " +
+    "rejection candle. Confirmation = touch + rejection candle + micro MSS.")
 bool   iPdFilter  = input.bool(true,  "Require premium / discount alignment", group = gEN)
 bool   iHtfFilter = input.bool(true,  "Require an acceptable HTF environment", group = gEN)
 bool   iVolFilter = input.bool(true,  "Apply volatility filter", group = gEN)
@@ -177,11 +188,11 @@ int    iArmMax    = input.int(60, "Maximum bars armed (waiting for entry)", minv
 // -- 1.9 Stop loss --------------------------------------------------------------------------------
 string gSL = "09 - STOP LOSS"
 float iSlBufATR = input.float(0.25, "SL buffer beyond the sweep wick (x ATR)", minval = 0, maxval = 3,
-                      step = 0.05, group = gSL)
+    step = 0.05, group = gSL)
 float iSlMinATR = input.float(0.30, "Minimum SL distance (x ATR)", minval = 0, maxval = 5,
-                      step = 0.05, group = gSL)
+    step = 0.05, group = gSL)
 float iSlMaxATR = input.float(2.50, "Maximum SL distance (x ATR)", minval = 0.5, maxval = 10,
-                      step = 0.05, group = gSL)
+    step = 0.05, group = gSL)
 float iSlMinAbs = input.float(1.00, "Minimum SL distance (price units)", minval = 0, group = gSL)
 float iSlMaxAbs = input.float(25.0, "Maximum SL distance (price units)", minval = 1, group = gSL)
 
@@ -189,12 +200,12 @@ float iSlMaxAbs = input.float(25.0, "Maximum SL distance (price units)", minval 
 string gTP = "10 - TARGETS"
 float  iMinRR = input.float(1.50, "Minimum R:R to TP1", minval = 0.5, maxval = 10, step = 0.1, group = gTP)
 string iTpMode = input.string("Liquidity + Structure", "TP selection mode",
-                     options = ["Liquidity + Structure", "Fixed R:R", "Closest of both"], group = gTP)
+    options = ["Liquidity + Structure", "Fixed R:R", "Closest of both"], group = gTP)
 float  iRR1 = input.float(1.50, "Fixed R:R - TP1", minval = 0.5, maxval = 20, step = 0.1, group = gTP)
 float  iRR2 = input.float(2.50, "Fixed R:R - TP2", minval = 0.5, maxval = 20, step = 0.1, group = gTP)
 float  iRR3 = input.float(4.00, "Fixed R:R - TP3", minval = 0.5, maxval = 20, step = 0.1, group = gTP)
 float  iTpSep = input.float(0.35, "Minimum separation between targets (x risk)", minval = 0, maxval = 3,
-                    step = 0.05, group = gTP)
+    step = 0.05, group = gTP)
 
 // -- 1.11 Order blocks ----------------------------------------------------------------------------
 string gOB = "11 - ORDER BLOCKS"
@@ -223,8 +234,8 @@ bool iVState     = input.bool(true, "Show current market state label", group = g
 // -- 1.14 News filter (manual - no economic calendar is fabricated) -------------------------------
 string gNW = "14 - NEWS FILTER (MANUAL)"
 bool   iNewsOn     = input.bool(false, "Enable manual high-impact news window", group = gNW,
-                         tooltip = "Pine Script has no reliable economic-calendar feed, so nothing is " +
-                         "invented here. Enter the event times yourself (chart timezone applies).")
+    tooltip = "Pine Script has no reliable economic-calendar feed, so nothing is " +
+    "invented here. Enter the event times yourself (chart timezone applies).")
 int    iNewsBefore = input.int(30, "Minutes before the event", minval = 0, maxval = 480, group = gNW)
 int    iNewsAfter  = input.int(30, "Minutes after the event", minval = 0, maxval = 480, group = gNW)
 int    iNews1 = input.time(timestamp("2026-01-01 00:00:00"), "Event 1", group = gNW)
@@ -377,23 +388,23 @@ f_biasTxt(int b) =>
 // Human readable liquidity-level state.
 f_stateTxt(int s) =>
     s == 0 ? "UNTOUCHED" : s == 1 ? "APPROACHING" : s == 2 ? "TESTED" :
-         s == 3 ? "LIQUIDITY TAKEN" : s == 4 ? "BROKEN" : s == 5 ? "EXPIRED" :
-         s == 6 ? "POTENTIAL SWEEP" : "--"
+    s == 3 ? "LIQUIDITY TAKEN" : s == 4 ? "BROKEN" : s == 5 ? "EXPIRED" :
+    s == 6 ? "POTENTIAL SWEEP" : "--"
 
 // Colour of a liquidity level according to its state.
 f_stateCol(int s) =>
     s == 3 ? cSwp : s == 4 or s == 5 ? cNeut : s == 6 ? color.new(cSwp, 45) :
-         s == 1 or s == 2 ? color.new(cLiq, 20) : cLiq
+    s == 1 or s == 2 ? color.new(cLiq, 20) : cLiq
 
 // State-machine text.  0 WAITING . 1 LIQUIDITY APPROACHING . 2 LIQUIDITY SWEPT .
 // 3 DISPLACEMENT . 4 MSS CONFIRMED . 5 SETUP ARMED (waiting for the retracement) .
 // 6 ENTRY ZONE . 7 ENTRY CONFIRMED . 8/9/10 TP1/TP2/TP3 HIT . 11 INVALIDATED . 12 COMPLETE
 f_setupTxt(int s) =>
     s == 0 ? "WAITING" : s == 1 ? "LIQUIDITY APPROACHING" : s == 2 ? "LIQUIDITY SWEPT" :
-         s == 3 ? "DISPLACEMENT" : s == 4 ? "MSS CONFIRMED" : s == 5 ? "SETUP ARMED" :
-         s == 6 ? "ENTRY ZONE" : s == 7 ? "ENTRY CONFIRMED" : s == 8 ? "TP1 HIT" :
-         s == 9 ? "TP2 HIT" : s == 10 ? "TP3 HIT" : s == 11 ? "INVALIDATED" :
-         s == 12 ? "COMPLETE" : "--"
+    s == 3 ? "DISPLACEMENT" : s == 4 ? "MSS CONFIRMED" : s == 5 ? "SETUP ARMED" :
+    s == 6 ? "ENTRY ZONE" : s == 7 ? "ENTRY CONFIRMED" : s == 8 ? "TP1 HIT" :
+    s == 9 ? "TP2 HIT" : s == 10 ? "TP3 HIT" : s == 11 ? "INVALIDATED" :
+    s == 12 ? "COMPLETE" : "--"
 
 // Structure bias from confirmed HTF pivots (HH/HL -> bullish, LH/LL -> bearish, BOS override).
 f_bias(float ph, float pl, float cl) =>
@@ -492,18 +503,11 @@ f_lvlDyn(array<Lvl> lv, string nm, float p, int kind, float tol) =>
 
 // Create a fresh setup record.
 f_newSetup(int dir, int state, string nm, float lp, float ext, int swBar, float mssLvl, float invLvl) =>
-    Setup.new(
-      true, dir, state, nm, lp, ext,                    // active, dir, state, liqName, liqPrice, ext
-      swBar, na, na, na, na, na, na,                    // swBar, dispBar, mssBar, fvgBar, armBar, zoneBar, entryBar
-      mssLvl, invLvl,                                   // mssLevel, invLevel
-      na, na, na, na, na, na, na, na,                   // fvgTop, fvgBot, entry, sl, tp1, tp2, tp3, risk
-      0,                                                // score
-      false, false, false, false, false, false, false,  // aSweep, aMss, aArmed, aEntry, aT1, aT2, aT3
-      false, false, false, false, false, false, false, false,   // t1, t2, t3, dispOk, mssOk, fvgOk, pdOk, tpOk
-      "",                                               // why
-      na, na, na, na, na,                               // lnEntry, lnSl, lnTp1, lnTp2, lnTp3
-      na, na, na, na, na, na,                           // lbEntry, lbSl, lbTp1, lbTp2, lbTp3, lbSetup
-      na, na, na)                                       // bxZone, bxRisk, bxRew
+    Setup.new(true, dir, state, nm, lp, ext, swBar, na, na, na, na, na, na, mssLvl, invLvl,
+    na, na, na, na, na, na, na, na, 0,
+    false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false, "",
+    na, na, na, na, na, na, na, na, na, na, na, na, na, na)
 
 // Delete every drawing object owned by a setup.
 f_kill(Setup S) =>
@@ -579,58 +583,58 @@ f_draw(Setup S) =>
         color cb = S.dir == 1 ? cBull : cBear
         if na(S.bxZone)
             S.bxZone := box.new(x0, S.fvgTop, bar_index, S.fvgBot, xloc = xloc.bar_index,
-                 border_color = color.new(cFvg, 25), border_width = 1,
-                 border_style = line.style_solid, bgcolor = color.new(cFvg, 88),
-                 text = iVLabels ? "FVG ENTRY ZONE" : "",
-                 text_size = size.tiny, text_halign = text.align_center)
+                border_color = color.new(cFvg, 25), border_width = 1,
+                border_style = line.style_solid, bgcolor = color.new(cFvg, 88),
+                text = iVLabels ? "FVG ENTRY ZONE" : "",
+                text_size = size.tiny, text_halign = text.align_center)
         if na(S.lnEntry)
             S.lnEntry := line.new(x0, S.entry, bar_index, S.entry, xloc = xloc.bar_index,
-                 color = cb, style = line.style_solid, width = 2)
+                color = cb, style = line.style_solid, width = 2)
         if na(S.lnSl)
             S.lnSl := line.new(x0, S.sl, bar_index, S.sl, xloc = xloc.bar_index,
-                 color = cBear, style = line.style_dashed, width = 1)
+                color = cBear, style = line.style_dashed, width = 1)
         if na(S.lnTp1) and not na(S.tp1)
             S.lnTp1 := line.new(x0, S.tp1, bar_index, S.tp1, xloc = xloc.bar_index,
-                 color = color.new(cBull, 25), style = line.style_dotted, width = 1)
+                color = color.new(cBull, 25), style = line.style_dotted, width = 1)
         if na(S.lnTp2) and not na(S.tp2)
             S.lnTp2 := line.new(x0, S.tp2, bar_index, S.tp2, xloc = xloc.bar_index,
-                 color = color.new(cBull, 10), style = line.style_dotted, width = 1)
+                color = color.new(cBull, 10), style = line.style_dotted, width = 1)
         if na(S.lnTp3) and not na(S.tp3)
             S.lnTp3 := line.new(x0, S.tp3, bar_index, S.tp3, xloc = xloc.bar_index,
-                 color = cBull, style = line.style_dotted, width = 1)
+                color = cBull, style = line.style_dotted, width = 1)
         // labels
         if iVLabels
             if na(S.lbEntry)
                 S.lbEntry := label.new(bar_index, S.entry,
-                     str.format("{0} ENTRY\n{1}", S.dir == 1 ? "LONG" : "SHORT", f_px(S.entry)),
-                     xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cb, 0),
-                     style = label.style_label_left, size = size.small)
+                    str.format("{0} ENTRY\n{1}", S.dir == 1 ? "LONG" : "SHORT", f_px(S.entry)),
+                    xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cb, 0),
+                    style = label.style_label_left, size = size.small)
             if na(S.lbSl)
                 S.lbSl := label.new(bar_index, S.sl, str.format("SL\n{0}", f_px(S.sl)),
-                     xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cBear, 0),
-                     style = label.style_label_left, size = size.small)
+                    xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cBear, 0),
+                    style = label.style_label_left, size = size.small)
             if na(S.lbTp1) and not na(S.tp1)
                 S.lbTp1 := label.new(bar_index, S.tp1, str.format("TP1\n{0}", f_px(S.tp1)),
-                     xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cBull, 35),
-                     style = label.style_label_left, size = size.small)
+                    xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cBull, 35),
+                    style = label.style_label_left, size = size.small)
             if na(S.lbTp2) and not na(S.tp2)
                 S.lbTp2 := label.new(bar_index, S.tp2, str.format("TP2\n{0}", f_px(S.tp2)),
-                     xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cBull, 20),
-                     style = label.style_label_left, size = size.small)
+                    xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cBull, 20),
+                    style = label.style_label_left, size = size.small)
             if na(S.lbTp3) and not na(S.tp3)
                 S.lbTp3 := label.new(bar_index, S.tp3, str.format("TP3\n{0}", f_px(S.tp3)),
-                     xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cBull, 0),
-                     style = label.style_label_left, size = size.small)
+                    xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cBull, 0),
+                    style = label.style_label_left, size = size.small)
         // risk / reward boxes
         if iVRR
             if na(S.bxRisk)
                 S.bxRisk := box.new(x0, S.entry, bar_index, S.sl, xloc = xloc.bar_index,
-                     border_color = color.new(cBear, 60), border_width = 1,
-                     border_style = line.style_dotted, bgcolor = color.new(cBear, 90))
+                    border_color = color.new(cBear, 60), border_width = 1,
+                    border_style = line.style_dotted, bgcolor = color.new(cBear, 90))
             if na(S.bxRew) and not na(S.tp1)
                 S.bxRew := box.new(x0, S.tp1, bar_index, S.entry, xloc = xloc.bar_index,
-                     border_color = color.new(cBull, 60), border_width = 1,
-                     border_style = line.style_dotted, bgcolor = color.new(cBull, 92))
+                    border_color = color.new(cBull, 60), border_width = 1,
+                    border_style = line.style_dotted, bgcolor = color.new(cBull, 92))
 
 // Keep the drawing objects of a live setup glued to the current bar.
 f_push(Setup S) =>
@@ -680,7 +684,7 @@ bool  bearC = close < open
 float atrRef   = ta.sma(atr, iVolRef)
 float volRatio = atrRef > 0 ? atr / atrRef : 1.0
 string volTxt  = volRatio >= iVolExt ? "EXTREME" : volRatio >= iVolHigh ? "HIGH" :
-                     volRatio <= iVolLow ? "LOW" : "NORMAL"
+    volRatio <= iVolLow ? "LOW" : "NORMAL"
 bool  volOk    = (not iVolFilter) or (volRatio >= iMinVol and volRatio <= iMaxVol)
 
 // Displacement candles: range, body and close location must all be strong --------------------------
@@ -710,21 +714,21 @@ bool newsRisk  = f_newsRisk()
 // Pivots are computed INSIDE request.security, so a swing is only known once its confirmation bars
 // have CLOSED on that timeframe -> no lookahead, no repaint.
 [h1PH, h1PL, h1C, h1H, h1L] = request.security(syminfo.tickerid, iHTF1,
-     [ta.pivothigh(high, iMajLen, iMajLen), ta.pivotlow(low, iMajLen, iMajLen), close, high, low],
-     lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
+    [ta.pivothigh(high, iMajLen, iMajLen), ta.pivotlow(low, iMajLen, iMajLen), close, high, low],
+    lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
 [h2PH, h2PL, h2C, h2H, h2L] = request.security(syminfo.tickerid, iHTF2,
-     [ta.pivothigh(high, iMajLen, iMajLen), ta.pivotlow(low, iMajLen, iMajLen), close, high, low],
-     lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
+    [ta.pivothigh(high, iMajLen, iMajLen), ta.pivotlow(low, iMajLen, iMajLen), close, high, low],
+    lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
 [sPH,  sPL,  sC,  sH,  sL]  = request.security(syminfo.tickerid, iTFS,
-     [ta.pivothigh(high, iIntLen, iIntLen), ta.pivotlow(low, iIntLen, iIntLen), close, high, low],
-     lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
+    [ta.pivothigh(high, iIntLen, iIntLen), ta.pivotlow(low, iIntLen, iIntLen), close, high, low],
+    lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
 
 [int b1, float b1SH, float b1SL] = f_bias(h1PH, h1PL, h1C)
 [int b2, float b2SH, float b2SL] = f_bias(h2PH, h2PL, h2C)
 [int bS, float sSH,  float sSL]  = f_bias(sPH,  sPL,  sC)
 
 string alignTxt = (b1 == 1 and b2 == 1) ? "BULLISH" : (b1 == -1 and b2 == -1) ? "BEARISH" :
-                      (b1 == 0 and b2 == 0) ? "NEUTRAL" : "MIXED"
+    (b1 == 0 and b2 == 0) ? "NEUTRAL" : "MIXED"
 
 // Premium / discount dealing range (built from the HTF-2 swings -> stable and meaningful)
 float drTop = na
@@ -736,9 +740,9 @@ float drEq = na(drTop) ? na : (drTop + drBot) / 2.0
 
 // Previous day / previous week (last CLOSED daily / weekly bars)
 [pdh, pdl, pdc] = request.security(syminfo.tickerid, "D", [high[1], low[1], close[1]],
-                       lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
+    lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
 [pwh, pwl]      = request.security(syminfo.tickerid, "W", [high[1], low[1]],
-                       lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
+    lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
 
 // ==================================================================================================
 // 6 - SESSION ENGINE (timezone aware)
@@ -771,12 +775,12 @@ f_sessBox(bool newS, bool endS, float hi, float lo, string nm, color col) =>
         int eb = bar_index - 1
         if sb >= 0 and eb > sb
             box bb = box.new(sb, hi, eb, lo, xloc = xloc.bar_index,
-                 border_color = color.new(col, 55), border_width = 1,
-                 border_style = line.style_dotted, bgcolor = color.new(col, 92))
+                border_color = color.new(col, 55), border_width = 1,
+                border_style = line.style_dotted, bgcolor = color.new(col, 92))
             array.push(sessBx, bb)
             if iVLabels
                 label ll = label.new(sb, hi, nm, xloc = xloc.bar_index, yloc = yloc.price,
-                     color = color.new(col, 45), style = label.style_label_left, size = size.tiny)
+                    color = color.new(col, 45), style = label.style_label_left, size = size.tiny)
                 array.push(sessLb, ll)
             while array.size(sessBx) > 9
                 box.delete(array.shift(sessBx))
@@ -885,8 +889,8 @@ if runEng
                     L.bar   := bar_index
                     if iAlApp
                         alert(str.format("{0} {1} - SELL-SIDE LIQUIDITY APPROACHING: {2} @ {3}",
-                             syminfo.ticker, timeframe.period, L.name, f_px(L.price)),
-                             alert.freq_once_per_bar_close)
+                            syminfo.ticker, timeframe.period, L.name, f_px(L.price)),
+                            alert.freq_once_per_bar_close)
         else
             // ---- BUY-SIDE LIQUIDITY (highs above price) ----------------------------------------
             if L.state == 6
@@ -926,8 +930,8 @@ if runEng
                     L.bar   := bar_index
                     if iAlApp
                         alert(str.format("{0} {1} - BUY-SIDE LIQUIDITY APPROACHING: {2} @ {3}",
-                             syminfo.ticker, timeframe.period, L.name, f_px(L.price)),
-                             alert.freq_once_per_bar_close)
+                            syminfo.ticker, timeframe.period, L.name, f_px(L.price)),
+                            alert.freq_once_per_bar_close)
 
 // -- 7.3 Sweep visuals + alert (one alert per liquidity event) -------------------------------------
 if nwDir != 0
@@ -935,19 +939,19 @@ if nwDir != 0
     if iVSweep
         // Vertical raid line from the level to the extreme wick + event label.
         line rl = line.new(bar_index, nwPrice, bar_index, nwExt, xloc = xloc.bar_index,
-             color = cSwp, style = line.style_solid, width = 2)
+            color = cSwp, style = line.style_solid, width = 2)
         array.push(evLin, rl)
         if iVLabels
             label sl = label.new(bar_index, nwExt,
-                 str.format("{0}\n{1} SWEPT\n{2}", nwName, bull ? "SSL" : "BSL", f_px(nwExt)),
-                 xloc = xloc.bar_index, yloc = bull ? yloc.belowbar : yloc.abovebar,
-                 color = color.new(cSwp, 15), style = bull ? label.style_label_upper_left : label.style_label_lower_left,
-                 size = size.tiny)
+                str.format("{0}\n{1} SWEPT\n{2}", nwName, bull ? "SSL" : "BSL", f_px(nwExt)),
+                xloc = xloc.bar_index, yloc = bull ? yloc.belowbar : yloc.abovebar,
+                color = color.new(cSwp, 15), style = bull ? label.style_label_upper_left : label.style_label_lower_left,
+                size = size.tiny)
             array.push(evLab, sl)
     if iAlSweep
         alert(str.format("{0} {1} - {2} SWEPT at {3} ({4}) - potential {5} reversal, watching for displacement + MSS",
-             syminfo.ticker, timeframe.period, bull ? "SELL-SIDE LIQUIDITY" : "BUY-SIDE LIQUIDITY",
-             nwName, f_px(nwPrice), bull ? "LONG" : "SHORT"), alert.freq_once_per_bar_close)
+            syminfo.ticker, timeframe.period, bull ? "SELL-SIDE LIQUIDITY" : "BUY-SIDE LIQUIDITY",
+            nwName, f_px(nwPrice), bull ? "LONG" : "SHORT"), alert.freq_once_per_bar_close)
 
 // -- 7.4 Create a setup from the confirmed sweep (only if every environment filter allows it) ------
 if nwDir != 0
@@ -976,17 +980,17 @@ if runEng
         label flb  = na
         if iVFvg
             fbx := box.new(bar_index - 2, fTop, bar_index, fBot, xloc = xloc.bar_index,
-                 border_color = color.new(cFvg, 35), border_width = 1,
-                 border_style = line.style_dotted, extend = iFvgExt ? extend.right : extend.none,
-                 bgcolor = color.new(cFvg, 88))
+                border_color = color.new(cFvg, 35), border_width = 1,
+                border_style = line.style_dotted, extend = iFvgExt ? extend.right : extend.none,
+                bgcolor = color.new(cFvg, 88))
             if iVLabels
                 flb := label.new(bar_index, fTop, "BULLISH FVG", xloc = xloc.bar_index,
-                     yloc = yloc.price, color = color.new(cFvg, 25),
-                     style = label.style_label_left, size = size.tiny)
+                    yloc = yloc.price, color = color.new(cFvg, 25),
+                    style = label.style_label_left, size = size.tiny)
         array.push(fvgs, Fvg.new(1, fTop, fBot, bar_index, false, false, fbx, flb))
         if iAlFvg
             alert(str.format("{0} {1} - BULLISH FVG created {2} - {3}", syminfo.ticker,
-                 timeframe.period, f_px(fBot), f_px(fTop)), alert.freq_once_per_bar_close)
+                timeframe.period, f_px(fBot), f_px(fTop)), alert.freq_once_per_bar_close)
     if fvgDn
         float dTop = low[2]
         float dBot = high
@@ -994,17 +998,17 @@ if runEng
         label dlb  = na
         if iVFvg
             dbx := box.new(bar_index - 2, dTop, bar_index, dBot, xloc = xloc.bar_index,
-                 border_color = color.new(cFvg, 35), border_width = 1,
-                 border_style = line.style_dotted, extend = iFvgExt ? extend.right : extend.none,
-                 bgcolor = color.new(cFvg, 88))
+                border_color = color.new(cFvg, 35), border_width = 1,
+                border_style = line.style_dotted, extend = iFvgExt ? extend.right : extend.none,
+                bgcolor = color.new(cFvg, 88))
             if iVLabels
                 dlb := label.new(bar_index, dBot, "BEARISH FVG", xloc = xloc.bar_index,
-                     yloc = yloc.price, color = color.new(cFvg, 25),
-                     style = label.style_label_left, size = size.tiny)
+                    yloc = yloc.price, color = color.new(cFvg, 25),
+                    style = label.style_label_left, size = size.tiny)
         array.push(fvgs, Fvg.new(-1, dTop, dBot, bar_index, false, false, dbx, dlb))
         if iAlFvg
             alert(str.format("{0} {1} - BEARISH FVG created {2} - {3}", syminfo.ticker,
-                 timeframe.period, f_px(dBot), f_px(dTop)), alert.freq_once_per_bar_close)
+                timeframe.period, f_px(dBot), f_px(dTop)), alert.freq_once_per_bar_close)
 
 // Mitigation, ageing and object-count control for FVG boxes ----------------------------------------
 if array.size(fvgs) > 0
@@ -1047,12 +1051,12 @@ f_makeOb(int dir, float obTop, float obBot, int obBar) =>
         label olb = na
         if iShowOb
             obx := box.new(obBar, obTop, bar_index, obBot, xloc = xloc.bar_index,
-                 border_color = color.new(oc, 30), border_width = 1,
-                 border_style = line.style_dashed, bgcolor = color.new(oc, 90))
+                border_color = color.new(oc, 30), border_width = 1,
+                border_style = line.style_dashed, bgcolor = color.new(oc, 90))
             if iVLabels
                 olb := label.new(obBar, dir == 1 ? obTop : obBot, dir == 1 ? "BULL OB" : "BEAR OB",
-                     xloc = xloc.bar_index, yloc = yloc.price, color = color.new(oc, 25),
-                     style = label.style_label_left, size = size.tiny)
+                    xloc = xloc.bar_index, yloc = yloc.price, color = color.new(oc, 25),
+                    style = label.style_label_left, size = size.tiny)
         array.push(obs, Ob.new(dir, obTop, obBot, obBar, false, obx, olb))
 
 if runEng and iShowOb
@@ -1129,19 +1133,19 @@ if iShowPd and not na(drTop) and not na(drBot) and drTop > drBot
             line.delete(lnEq)
         int pdx = math.max(0, bar_index - iPdLook)
         bxPrem := box.new(pdx, drTop, bar_index, drEq, xloc = xloc.bar_index,
-             border_color = color.new(cBear, 75), border_width = 1, border_style = line.style_dotted,
-             bgcolor = color.new(cBear, 94), text = iVLabels ? "PREMIUM" : "",
-             text_size = size.tiny, text_halign = text.align_right, text_valign = text.valign_top)
+            border_color = color.new(cBear, 75), border_width = 1, border_style = line.style_dotted,
+            bgcolor = color.new(cBear, 94), text = iVLabels ? "PREMIUM" : "",
+            text_size = size.tiny, text_halign = text.align_right, text_valign = text.valign_top)
         bxDisc := box.new(pdx, drEq, bar_index, drBot, xloc = xloc.bar_index,
-             border_color = color.new(cBull, 75), border_width = 1, border_style = line.style_dotted,
-             bgcolor = color.new(cBull, 94), text = iVLabels ? "DISCOUNT" : "",
-             text_size = size.tiny, text_halign = text.align_right, text_valign = text.valign_bottom)
+            border_color = color.new(cBull, 75), border_width = 1, border_style = line.style_dotted,
+            bgcolor = color.new(cBull, 94), text = iVLabels ? "DISCOUNT" : "",
+            text_size = size.tiny, text_halign = text.align_right, text_valign = text.valign_bottom)
         lnEq := line.new(pdx, drEq, bar_index, drEq, xloc = xloc.bar_index, color = color.new(cNeut, 25),
-             style = line.style_dashed, width = 1)
+            style = line.style_dashed, width = 1)
         if iVLabels
             label.new(bar_index, drEq, str.format("50%  {0}", f_px(drEq)), xloc = xloc.bar_index,
-                 yloc = yloc.price, color = color.new(cNeut, 30), style = label.style_label_left,
-                 size = size.tiny)
+                yloc = yloc.price, color = color.new(cNeut, 30), style = label.style_label_left,
+                size = size.tiny)
         pdTop := drTop
         pdBot := drBot
     else
@@ -1169,8 +1173,7 @@ if runEng
             reason := "EXPIRED - setup window closed before entry"
         else if bar_index > S.swBar and ((bull and close < S.ext) or (not bull and close > S.ext))
             dead   := true
-            reason := bull ? "SWEEP FAILED - closed back below the swept low"
-                           : "SWEEP FAILED - closed back above the swept high"
+            reason := bull ? "SWEEP FAILED - closed back below the swept low" : "SWEEP FAILED - closed back above the swept high"
         else if S.state >= 5 and S.state < 7
             if bull and close < S.fvgBot
                 dead   := true
@@ -1191,7 +1194,7 @@ if runEng
             f_freeze(S)
             if iAlInv
                 alert(str.format("{0} {1} - SETUP INVALIDATED ({2}) - {3}", syminfo.ticker,
-                     timeframe.period, bull ? "LONG" : "SHORT", reason), alert.freq_once_per_bar_close)
+                    timeframe.period, bull ? "LONG" : "SHORT", reason), alert.freq_once_per_bar_close)
             continue
 
         // -- 11.2 Displacement --------------------------------------------------------------------
@@ -1202,10 +1205,10 @@ if runEng
                 S.state   := 3
                 if iVDisp and iVLabels
                     label dl = label.new(bar_index, bull ? low : high, "DISPLACEMENT",
-                         xloc = xloc.bar_index, yloc = bull ? yloc.belowbar : yloc.abovebar,
-                         color = color.new(bull ? cBull : cBear, 20),
-                         style = bull ? label.style_label_upper_left : label.style_label_lower_left,
-                         size = size.tiny)
+                        xloc = xloc.bar_index, yloc = bull ? yloc.belowbar : yloc.abovebar,
+                        color = color.new(bull ? cBull : cBear, 20),
+                        style = bull ? label.style_label_upper_left : label.style_label_lower_left,
+                        size = size.tiny)
                     array.push(evLab, dl)
             else if bar_index - S.swBar > iDispWin
                 S.active := false
@@ -1216,24 +1219,23 @@ if runEng
 
         // -- 11.3 MSS / CHoCH ---------------------------------------------------------------------
         if S.state == 3
-            bool mssNow = bull ? (not na(S.mssLevel) and close > S.mssLevel)
-                               : (not na(S.mssLevel) and close < S.mssLevel)
+            bool mssNow = bull ? (not na(S.mssLevel) and close > S.mssLevel) : (not na(S.mssLevel) and close < S.mssLevel)
             if mssNow
                 S.mssOk  := true
                 S.mssBar := bar_index
                 S.state  := 4
                 if iVMss and iVLabels
                     label ml = label.new(bar_index, bull ? low : high,
-                         bull ? "MSS ↑" : "MSS ↓",
-                         xloc = xloc.bar_index, yloc = bull ? yloc.belowbar : yloc.abovebar,
-                         color = color.new(bull ? cBull : cBear, 0),
-                         style = bull ? label.style_label_upper_left : label.style_label_lower_left,
-                         size = size.small)
+                        bull ? "MSS ↑" : "MSS ↓",
+                        xloc = xloc.bar_index, yloc = bull ? yloc.belowbar : yloc.abovebar,
+                        color = color.new(bull ? cBull : cBear, 0),
+                        style = bull ? label.style_label_upper_left : label.style_label_lower_left,
+                        size = size.small)
                     array.push(evLab, ml)
                 if iAlMss
                     alert(str.format("{0} {1} - {2} MSS CONFIRMED after {3} sweep + displacement",
-                         syminfo.ticker, timeframe.period, bull ? "BULLISH" : "BEARISH", S.liqName),
-                         alert.freq_once_per_bar_close)
+                        syminfo.ticker, timeframe.period, bull ? "BULLISH" : "BEARISH", S.liqName),
+                        alert.freq_once_per_bar_close)
             else if bar_index - S.dispBar > iMssWin
                 S.active := false
                 S.state  := 11
@@ -1256,7 +1258,7 @@ if runEng
 
                 // ---- entry level inside the gap -----------------------------------------------
                 float depth = iEpct == "25%" ? 0.25 : iEpct == "50%" ? 0.50 :
-                                  iEpct == "62%" ? 0.62 : iEpct == "75%" ? 0.75 : 1.00
+                    iEpct == "62%" ? 0.62 : iEpct == "75%" ? 0.75 : 1.00
                 float eLvl = bull ? F.top - (F.top - F.bot) * depth : F.bot + (F.top - F.bot) * depth
 
                 // ---- stop loss beyond the sweep wick -------------------------------------------
@@ -1393,13 +1395,13 @@ if runEng
                     S.state  := 5
                     S.armBar := bar_index
                     S.why    := str.format("Targets: TP1 R {0} / TP2 R {1} / TP3 R {2}",
-                                    f_num(rr1), f_num(rr2), f_num(rr3))
+                        f_num(rr1), f_num(rr2), f_num(rr3))
                     f_draw(S)
                     if iAlArmed
                         alert(str.format("{0} {1} - {2} SETUP ARMED | {3} sweep + MSS + FVG | entry {4} SL {5} TP1 {6} TP2 {7} TP3 {8} | quality {9}/100",
-                             syminfo.ticker, timeframe.period, bull ? "LONG" : "SHORT", S.liqName,
-                             f_px(S.entry), f_px(S.sl), f_px(S.tp1), f_px(S.tp2), f_px(S.tp3),
-                             str.tostring(S.score)), alert.freq_once_per_bar_close)
+                            syminfo.ticker, timeframe.period, bull ? "LONG" : "SHORT", S.liqName,
+                            f_px(S.entry), f_px(S.sl), f_px(S.tp1), f_px(S.tp2), f_px(S.tp3),
+                            str.tostring(S.score)), alert.freq_once_per_bar_close)
                 break
 
         // -- 11.4b No valid FVG appeared inside the window -----------------------------------------
@@ -1413,8 +1415,7 @@ if runEng
         // -- 11.5 Wait for the retracement into the FVG, then confirm the entry --------------------
         if S.state == 5 or S.state == 6
             if bar_index > S.armBar
-                bool inZone = bull ? (low <= S.fvgTop and high >= S.fvgBot)
-                                   : (high >= S.fvgBot and low <= S.fvgTop)
+                bool inZone = bull ? (low <= S.fvgTop and high >= S.fvgBot) : (high >= S.fvgBot and low <= S.fvgTop)
                 if inZone and S.state == 5
                     S.state   := 6
                     S.zoneBar := bar_index
@@ -1424,25 +1425,25 @@ if runEng
                                         : (close < open and close <= S.entry)
                     bool micro   = bull ? microUp : microDn
                     bool trig    = iEntryMode == "Aggressive" ? touched :
-                                       iEntryMode == "Balanced" ? (touched and rej) :
-                                       (touched and rej and micro)
+                        iEntryMode == "Balanced" ? (touched and rej) :
+                        (touched and rej and micro)
                     if trig
                         S.state    := 7
                         S.entryBar := bar_index
                         if iVTrade and iVLabels and na(S.lbSetup)
                             S.lbSetup := label.new(bar_index, bull ? low : high,
-                                 bull ? "LONG" : "SHORT", xloc = xloc.bar_index,
-                                 yloc = bull ? yloc.belowbar : yloc.abovebar,
-                                 color = color.new(bull ? cBull : cBear, 0),
-                                 style = bull ? label.style_label_upper_left : label.style_label_lower_left,
-                                 size = size.normal)
+                                bull ? "LONG" : "SHORT", xloc = xloc.bar_index,
+                                yloc = bull ? yloc.belowbar : yloc.abovebar,
+                                color = color.new(bull ? cBull : cBear, 0),
+                                style = bull ? label.style_label_upper_left : label.style_label_lower_left,
+                                size = size.normal)
                         if iAlEntry
                             alert(str.format("{0} {1} - {2} - Liquidity sweep + MSS + FVG confirmation | entry {3} SL {4} TP1 {5} TP2 {6} TP3 {7} | RR {8} / {9} / {10} | quality {11}/100 | {12}",
-                                 syminfo.ticker, timeframe.period, bull ? "LONG" : "SHORT",
-                                 f_px(S.entry), f_px(S.sl), f_px(S.tp1), f_px(S.tp2), f_px(S.tp3),
-                                 f_num(f_rr(S.entry, S.sl, S.tp1)), f_num(f_rr(S.entry, S.sl, S.tp2)),
-                                 f_num(f_rr(S.entry, S.sl, S.tp3)), str.tostring(S.score), S.liqName),
-                                 alert.freq_once_per_bar_close)
+                                syminfo.ticker, timeframe.period, bull ? "LONG" : "SHORT",
+                                f_px(S.entry), f_px(S.sl), f_px(S.tp1), f_px(S.tp2), f_px(S.tp3),
+                                f_num(f_rr(S.entry, S.sl, S.tp1)), f_num(f_rr(S.entry, S.sl, S.tp2)),
+                                f_num(f_rr(S.entry, S.sl, S.tp3)), str.tostring(S.score), S.liqName),
+                                alert.freq_once_per_bar_close)
 
         // -- 11.6 Targets and stop management after the entry --------------------------------------
         if S.state >= 7 and S.state < 11
@@ -1457,15 +1458,15 @@ if runEng
                     S.state := 8
                     if iAlTp
                         alert(str.format("{0} {1} - TP1 REACHED {2} ({3})", syminfo.ticker,
-                             timeframe.period, f_px(S.tp1), bull ? "LONG" : "SHORT"),
-                             alert.freq_once_per_bar_close)
+                            timeframe.period, f_px(S.tp1), bull ? "LONG" : "SHORT"),
+                            alert.freq_once_per_bar_close)
                 if S.t1 and not S.t2 and not na(S.tp2) and (bull ? high >= S.tp2 : low <= S.tp2)
                     S.t2   := true
                     S.state := 9
                     if iAlTp
                         alert(str.format("{0} {1} - TP2 REACHED {2} ({3})", syminfo.ticker,
-                             timeframe.period, f_px(S.tp2), bull ? "LONG" : "SHORT"),
-                             alert.freq_once_per_bar_close)
+                            timeframe.period, f_px(S.tp2), bull ? "LONG" : "SHORT"),
+                            alert.freq_once_per_bar_close)
                 if S.t2 and not S.t3 and not na(S.tp3) and (bull ? high >= S.tp3 : low <= S.tp3)
                     S.t3    := true
                     S.state := 12
@@ -1474,8 +1475,8 @@ if runEng
                     f_freeze(S)
                     if iAlTp
                         alert(str.format("{0} {1} - TP3 REACHED {2} ({3})", syminfo.ticker,
-                             timeframe.period, f_px(S.tp3), bull ? "LONG" : "SHORT"),
-                             alert.freq_once_per_bar_close)
+                            timeframe.period, f_px(S.tp3), bull ? "LONG" : "SHORT"),
+                            alert.freq_once_per_bar_close)
 
 // ==================================================================================================
 // 12 - RENDERING
@@ -1490,7 +1491,7 @@ if iShowLiq
         color lc = f_stateCol(L.state)
         if na(L.ln)
             L.ln := line.new(bar_index, L.price, bar_index, L.price, xloc = xloc.bar_index,
-                 color = lc, style = line.style_dashed, width = 1)
+                color = lc, style = line.style_dashed, width = 1)
         else
             line.set_xy1(L.ln, line.get_x1(L.ln), L.price)
             line.set_xy2(L.ln, bar_index, L.price)
@@ -1500,7 +1501,7 @@ if iShowLiq
             string ltx = str.format("{0}\n{1}", L.name, f_stateTxt(L.state))
             if na(L.lb)
                 L.lb := label.new(bar_index, L.price, ltx, xloc = xloc.bar_index, yloc = yloc.price,
-                     color = lc, style = label.style_label_left, size = size.tiny)
+                    color = lc, style = label.style_label_left, size = size.tiny)
             else
                 label.set_xy(L.lb, bar_index, L.price)
                 label.set_text(L.lb, ltx)
@@ -1648,11 +1649,11 @@ if curIdx >= 0
     dTp2   := f_px(C.tp2)
     dTp3   := f_px(C.tp3)
     dRR    := str.format("{0} / {1} / {2}", f_num(f_rr(C.entry, C.sl, C.tp1)),
-                  f_num(f_rr(C.entry, C.sl, C.tp2)), f_num(f_rr(C.entry, C.sl, C.tp3)))
+        f_num(f_rr(C.entry, C.sl, C.tp2)), f_num(f_rr(C.entry, C.sl, C.tp3)))
     dScoreN := C.score
     dScore := str.format("{0}/100", str.tostring(C.score))
     dWhy   := C.why == "" ? (C.state >= 7 ? "Analytical setup - manage with your own risk rules"
-                   : "Monitoring the sequence") : C.why
+        : "Monitoring the sequence") : C.why
     if not na(drEq) and not na(C.entry)
         bool inDisc = C.entry <= drEq
         dPd := inDisc ? "DISCOUNT" : "PREMIUM"
@@ -1691,21 +1692,21 @@ if curIdx >= 0
     Setup C2 = array.get(setups, curIdx)
     bool b2l = C2.dir == 1
     array.push(story, str.format("1. Higher-timeframe bias: {0} {1}", alignTxt,
-                   b2l ? (b1 >= 0 and b2 >= 0 ? "✓" : "against") : (b1 <= 0 and b2 <= 0 ? "✓" : "against")))
+        b2l ? (b1 >= 0 and b2 >= 0 ? "✓" : "against") : (b1 <= 0 and b2 <= 0 ? "✓" : "against")))
     array.push(story, str.format("2. Liquidity identified: {0} @ {1}", C2.liqName, f_px(C2.liqPrice)))
     array.push(story, str.format("3. Price approached the level {0}", C2.state >= 2 ? "✓" : "·"))
     array.push(story, str.format("4. {0} swept @ {1} {2}", b2l ? "Sell-side liquidity" : "Buy-side liquidity",
-                   f_px(C2.ext), C2.state >= 2 ? "✓" : "·"))
+        f_px(C2.ext), C2.state >= 2 ? "✓" : "·"))
     array.push(story, str.format("5. Close back through the level {0}", C2.state >= 3 ? "✓" : "·"))
     array.push(story, str.format("6. {0} displacement {1}", b2l ? "Bullish" : "Bearish", C2.dispOk ? "✓" : "·"))
     array.push(story, str.format("7. {0} MSS / structure shift {1}", b2l ? "Bullish" : "Bearish",
-                   C2.mssOk ? "✓" : "·"))
+        C2.mssOk ? "✓" : "·"))
     array.push(story, str.format("8. {0} FVG created {1}", b2l ? "Bullish" : "Bearish",
-                   C2.state >= 5 ? "✓" : "·"))
+        C2.state >= 5 ? "✓" : "·"))
     array.push(story, str.format("9. Retracement into the FVG {0}", C2.state >= 6 ? "✓" : "·"))
     array.push(story, str.format("10. Entry confirmation {0}", C2.state >= 7 ? "✓" : "·"))
     array.push(story, str.format("11. Targets: TP1 {0} TP2 {1} TP3 {2}",
-                   C2.t1 ? "✓" : "·", C2.t2 ? "✓" : "·", C2.t3 ? "✓" : "·"))
+        C2.t1 ? "✓" : "·", C2.t2 ? "✓" : "·", C2.t3 ? "✓" : "·"))
 else
     array.push(story, str.format("1. Waiting for price to approach mapped liquidity ({0})", nearName))
     array.push(story, "2. No confirmed liquidity sweep yet")
@@ -1719,18 +1720,18 @@ else
 
 f_kv(table t, int r, string k, string v, color vc) =>
     table.cell(t, 0, r, k, text_color = color.new(cTxt, 35), bgcolor = cDash,
-         text_size = size.small, text_halign = text.align_left)
+    text_size = size.small, text_halign = text.align_left)
     table.cell(t, 1, r, v, text_color = vc, bgcolor = cDash,
-         text_size = size.small, text_halign = text.align_right)
+        text_size = size.small, text_halign = text.align_right)
 
 f_sec(table t, int r, string k) =>
     table.cell(t, 0, r, k, text_color = cTxt, bgcolor = color.new(cDash, 20),
-         text_size = size.small, text_halign = text.align_left)
+    text_size = size.small, text_halign = text.align_left)
     table.cell(t, 1, r, "", text_color = cTxt, bgcolor = color.new(cDash, 20), text_size = size.small)
 
 f_wide(table t, int r, string k, color vc) =>
     table.cell(t, 0, r, k, text_color = vc, bgcolor = cDash, text_size = size.small,
-         text_halign = text.align_left)
+    text_halign = text.align_left)
     table.cell(t, 1, r, "", text_color = vc, bgcolor = cDash, text_size = size.small)
 
 f_blank(table t, int r) =>
@@ -1738,35 +1739,35 @@ f_blank(table t, int r) =>
     table.cell(t, 1, r, "", bgcolor = color.new(cDash, 100), text_size = size.tiny)
 
 var table dash = table.new(position.top_right, columns = 2, rows = 70,
-     frame_color = color.new(cTxt, 55), frame_width = 1, border_color = color.new(cTxt, 75),
-     border_width = 1, bgcolor = color.new(cDash, 100))
+    frame_color = color.new(cTxt, 55), frame_width = 1, border_color = color.new(cTxt, 75),
+    border_width = 1, bgcolor = color.new(cDash, 100))
 
 if barstate.islast and iShowDash
     int rr = 0
     table.cell(dash, 0, rr, "XAUUSD SMART ENTRY ENGINE", text_color = cTxt,
-         bgcolor = color.new(cDash, 15), text_size = size.small, text_halign = text.align_left)
+        bgcolor = color.new(cDash, 15), text_size = size.small, text_halign = text.align_left)
     table.cell(dash, 1, rr, str.format("{0} {1}", syminfo.ticker, timeframe.period), text_color = cTxt,
-         bgcolor = color.new(cDash, 15), text_size = size.small, text_halign = text.align_right)
+        bgcolor = color.new(cDash, 15), text_size = size.small, text_halign = text.align_right)
     rr += 1
 
     // -- bias --------------------------------------------------------------------------------------
     f_kv(dash, rr, str.format("HTF 1 ({0})", iHTF1), f_biasTxt(b1),
-         b1 == 1 ? cBull : b1 == -1 ? cBear : cNeut)
+        b1 == 1 ? cBull : b1 == -1 ? cBear : cNeut)
     rr += 1
     f_kv(dash, rr, str.format("HTF 2 ({0})", iHTF2), f_biasTxt(b2),
-         b2 == 1 ? cBull : b2 == -1 ? cBear : cNeut)
+        b2 == 1 ? cBull : b2 == -1 ? cBear : cNeut)
     rr += 1
     f_kv(dash, rr, "Alignment", alignTxt,
-         alignTxt == "BULLISH" ? cBull : alignTxt == "BEARISH" ? cBear : cNeut)
+        alignTxt == "BULLISH" ? cBull : alignTxt == "BEARISH" ? cBear : cNeut)
     rr += 1
     f_kv(dash, rr, str.format("Structure ({0})", iTFS), f_biasTxt(bS),
-         bS == 1 ? cBull : bS == -1 ? cBear : cNeut)
+        bS == 1 ? cBull : bS == -1 ? cBear : cNeut)
     rr += 1
     f_kv(dash, rr, "Session", curSess, cTxt)
     rr += 1
     f_kv(dash, rr, "Volatility", str.format("{0} ({1}x)", volTxt, f_num(volRatio)),
-         volRatio >= iVolExt ? cBear : volRatio >= iVolHigh ? color.new(cBear, 35) :
-         volRatio <= iVolLow ? cNeut : cTxt)
+        volRatio >= iVolExt ? cBear : volRatio >= iVolHigh ? color.new(cBear, 35) :
+        volRatio <= iVolLow ? cNeut : cTxt)
     rr += 1
     f_blank(dash, rr)
     rr += 1
@@ -1777,7 +1778,7 @@ if barstate.islast and iShowDash
     f_kv(dash, rr, "Nearest", nearName, cLiq)
     rr += 1
     f_kv(dash, rr, "Distance", na(nearDist) ? "--" : str.format("{0} ({1} ATR)", f_px(nearDist),
-             f_num(atr > 0 ? nearDist / atr : na)), cTxt)
+        f_num(atr > 0 ? nearDist / atr : na)), cTxt)
     rr += 1
     f_kv(dash, rr, "Status", f_stateTxt(nearState), f_stateCol(nearState))
     rr += 1
@@ -1804,12 +1805,12 @@ if barstate.islast and iShowDash
     f_sec(dash, rr, "SETUP")
     rr += 1
     f_kv(dash, rr, "Direction", curIdx >= 0 ? dDir : "NONE",
-         curDir == 1 ? cBull : curDir == -1 ? cBear : cNeut)
+        curDir == 1 ? cBull : curDir == -1 ? cBear : cNeut)
     rr += 1
     f_kv(dash, rr, "State", dState, curState == 11 ? cBear : cTxt)
     rr += 1
     f_kv(dash, rr, "Quality (confluence)", dScore,
-         dScoreN >= 70 ? cBull : dScoreN >= 45 ? cLiq : cNeut)
+        dScoreN >= 70 ? cBull : dScoreN >= 45 ? cLiq : cNeut)
     rr += 1
     f_kv(dash, rr, "Entry location", dPd, dPd == "DISCOUNT" ? cBull : dPd == "PREMIUM" ? cBear : cNeut)
     rr += 1
@@ -1875,7 +1876,7 @@ if barstate.islast and iShowDash
         f_kv(dash, rr, "ATR", str.format("{0} ({1})", f_px(atr), f_num(volRatio)), cTxt)
         rr += 1
         f_kv(dash, rr, "News window", newsRisk ? "ACTIVE - high impact window" : "clear",
-             newsRisk ? cBear : cNeut)
+            newsRisk ? cBear : cNeut)
         rr += 1
         f_kv(dash, rr, "Note", dWhy, curState == 11 ? cBear : color.new(cTxt, 20))
         rr += 1
@@ -1905,7 +1906,7 @@ if iOn and iVState
         float sy = high + atr * 1.5
         if na(stateLab)
             stateLab := label.new(bar_index, sy, mktState, xloc = xloc.bar_index, yloc = yloc.price,
-                 color = color.new(mktCol, 5), style = label.style_label_left, size = size.normal)
+                color = color.new(mktCol, 5), style = label.style_label_left, size = size.normal)
         else
             label.set_xy(stateLab, bar_index, sy)
             label.set_text(stateLab, mktState)
