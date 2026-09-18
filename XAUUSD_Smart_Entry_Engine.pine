@@ -699,9 +699,18 @@ string curSess = inNy ? "NEW YORK" : inLon ? "LONDON" : inAsia ? "ASIA" : "OFF-S
 var array<box>   sessBx = array.new<box>()
 var array<label> sessLb = array.new<label>()
 
-f_sessBox(bool newS, bool endS, float hi, float lo, string nm, color col) =>
+var int asiaStartBar = 0
+var int lonStartBar  = 0
+var int nyStartBar   = 0
+if newAsia
+    asiaStartBar := bar_index
+if newLon
+    lonStartBar  := bar_index
+if newNy
+    nyStartBar   := bar_index
+
+f_sessBox(int sb, bool endS, float hi, float lo, string nm, color col) =>
     if endS and not na(hi) and not na(lo) and iSessBox
-        int sb = int(ta.valuewhen(newS, bar_index, 0))
         int eb = bar_index - 1
         if sb >= 0 and eb > sb
             box bb = box.new(sb, hi, eb, lo, xloc = xloc.bar_index, border_color = color.new(col, 55), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(col, 92))
@@ -716,9 +725,9 @@ f_sessBox(bool newS, bool endS, float hi, float lo, string nm, color col) =>
     bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
     _r
 
-f_sessBox(newAsia, endAsia, aHi, aLo, "ASIA",   color.new(#5c6bc0, 0))
-f_sessBox(newLon,  endLon,  lHi, lLo, "LONDON", color.new(#26c6da, 0))
-f_sessBox(newNy,   endNy,   nHi, nLo, "NY",     color.new(#ffa726, 0))
+f_sessBox(asiaStartBar, endAsia, aHi, aLo, "ASIA",   color.new(#5c6bc0, 0))
+f_sessBox(lonStartBar,  endLon,  lHi, lLo, "LONDON", color.new(#26c6da, 0))
+f_sessBox(nyStartBar,   endNy,   nHi, nLo, "NY",     color.new(#ffa726, 0))
 
 // ==================================================================================================
 // 7 - LIQUIDITY MAP  +  SWEEP DETECTION
