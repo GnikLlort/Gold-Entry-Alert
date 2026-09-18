@@ -84,8 +84,8 @@ int    iVisBars     = input.int(350, "Keep visuals for (bars)", minval = 50, max
 
 // -- 1.2 Timeframes -------------------------------------------------------------------------------
 string gTF  = "02 - TIMEFRAMES"
-string iHTF1 = input.timeframe("240", "HTF 1  - macro bias", options = ["60", "120", "180", "240", "480", "D", "W"], group = gTF)
-string iHTF2 = input.timeframe("60",  "HTF 2  - directional bias", options = ["15", "30", "60", "120", "240", "D"], group = gTF)
+string iHTF1 = input.timeframe("240", "HTF 1  - macro bias", options = ["60", "120", "180", "240", "480", "1D", "1W"], group = gTF)
+string iHTF2 = input.timeframe("60",  "HTF 2  - directional bias", options = ["15", "30", "60", "120", "240", "1D"], group = gTF)
 string iTFS  = input.timeframe("15",  "Structure timeframe  - internal swings / MSS", options = ["5", "10", "15", "30", "60"], group = gTF)
 string iTFE  = input.timeframe("5",   "Execution timeframe  - informational (run the chart on it)", options = ["1", "2", "3", "5", "10", "15"], group = gTF)
 
@@ -437,7 +437,7 @@ f_lvlSet(array<Lvl> lv, string nm, float p, int kind) =>
                 Lm.ext   := na
                 Lm.bar   := bar_index
             Lm.kind := kind
-        else
+        if idx < 0
             array.push(lv, Lvl.new(nm, p, kind, 0, bar_index, na, 1, false, na, na))
     bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
     _r
@@ -671,8 +671,8 @@ if not na(b2SH) and not na(b2SL)
 float drEq = na(drTop) ? na : (drTop + drBot) / 2.0
 
 // Previous day / previous week (last CLOSED daily / weekly bars)
-[pdh, pdl, pdc] = request.security(syminfo.tickerid, "D", [high[1], low[1], close[1]], lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
-[pwh, pwl]      = request.security(syminfo.tickerid, "W", [high[1], low[1]], lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
+[pdh, pdl, pdc] = request.security(syminfo.tickerid, "1D", [high[1], low[1], close[1]], lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
+[pwh, pwl]      = request.security(syminfo.tickerid, "1W", [high[1], low[1]], lookahead = barmerge.lookahead_off, gaps = barmerge.gaps_off)
 
 // ==================================================================================================
 // 6 - SESSION ENGINE (timezone aware)
@@ -790,10 +790,10 @@ if runEng
                         nwName := L.name
                         nwPrice := L.price
                         nwExt := L.ext
-                else if bar_index - L.bar >= iSwConfirm
+                if L.state == 6 and bar_index - L.bar >= iSwConfirm
                     L.state := 4
                     L.bar := bar_index
-            else
+            if L.state != 6 and L.state != 3 and L.state != 4
                 if low < L.price - pen
                     if close > L.price
                         // Confirmed sweep: pierced and closed back above the level.
@@ -805,20 +805,20 @@ if runEng
                             nwName := L.name
                             nwPrice := L.price
                             nwExt := low
-                    else
+                    if close <= L.price
                         // Developing: show POTENTIAL until the candle confirms.
                         L.state := 6
                         L.ext   := low
                         L.bar   := bar_index
-                else if low <= L.price and L.state < 2
+                if L.state == 0 and low <= L.price and low >= L.price - pen
                     L.state := 2
                     L.bar   := bar_index
-                else if L.state == 0 and close > L.price and close - L.price <= app
+                if L.state == 0 and close > L.price and close - L.price <= app
                     L.state := 1
                     L.bar   := bar_index
                     if iAlApp
                         alert(str.format("{0} {1} - SELL-SIDE LIQUIDITY APPROACHING: {2} @ {3}", syminfo.ticker, timeframe.period, L.name, f_px(L.price)), alert.freq_once_per_bar_close)
-        else
+        if L.kind == -1
             // ---- BUY-SIDE LIQUIDITY (highs above price) ----------------------------------------
             if L.state == 6
                 if high > nz(L.ext, high)
@@ -831,10 +831,10 @@ if runEng
                         nwName := L.name
                         nwPrice := L.price
                         nwExt := L.ext
-                else if bar_index - L.bar >= iSwConfirm
+                if L.state == 6 and bar_index - L.bar >= iSwConfirm
                     L.state := 4
                     L.bar := bar_index
-            else
+            if L.state != 6 and L.state != 3 and L.state != 4
                 if high > L.price + pen
                     if close < L.price
                         L.state := 3
@@ -845,14 +845,14 @@ if runEng
                             nwName := L.name
                             nwPrice := L.price
                             nwExt := high
-                    else
+                    if close >= L.price
                         L.state := 6
                         L.ext   := high
                         L.bar   := bar_index
-                else if high >= L.price and L.state < 2
+                if L.state == 0 and high >= L.price and high <= L.price + pen
                     L.state := 2
                     L.bar   := bar_index
-                else if L.state == 0 and close < L.price and L.price - close <= app
+                if L.state == 0 and close < L.price and L.price - close <= app
                     L.state := 1
                     L.bar   := bar_index
                     if iAlApp
@@ -1002,7 +1002,7 @@ if array.size(obs) > 0
                 box.set_right(O.bx, bar_index)
             if not na(O.lb)
                 label.set_text(O.lb, O.dir == 1 ? "BULL OB - MITIGATED" : "BEAR OB - MITIGATED")
-        else if not na(O.bx)
+        if not obHit and not O.mit and not na(O.bx)
             box.set_right(O.bx, bar_index)          // live block keeps extending until mitigated
         if O.mit or (bar_index - O.bar) > iVisBars
             if not na(O.bx)
@@ -1028,7 +1028,8 @@ var float pdTop  = na
 var float pdBot  = na
 
 if iShowPd and not na(drTop) and not na(drBot) and drTop > drBot
-    if na(bxPrem) or drTop != pdTop or drBot != pdBot
+    bool needNewPd = na(bxPrem) or drTop != pdTop or drBot != pdBot
+    if needNewPd
         if not na(bxPrem)
             box.delete(bxPrem)
         if not na(bxDisc)
@@ -1043,7 +1044,7 @@ if iShowPd and not na(drTop) and not na(drBot) and drTop > drBot
             label.new(bar_index, drEq, str.format("50%  {0}", f_px(drEq)), xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cNeut, 30), style = label.style_label_left, size = size.tiny)
         pdTop := drTop
         pdBot := drBot
-    else
+    if not needNewPd
         box.set_right(bxPrem, bar_index)
         box.set_right(bxDisc, bar_index)
         line.set_x2(lnEq, bar_index)
@@ -1100,7 +1101,7 @@ if runEng
                 if iVDisp and iVLabels
                     label dl = label.new(bar_index, bull ? low : high, "DISPLACEMENT", xloc = xloc.bar_index, yloc = bull ? yloc.belowbar : yloc.abovebar, color = color.new(bull ? cBull : cBear, 20), style = bull ? label.style_label_upper_left : label.style_label_lower_left, size = size.tiny)
                     array.push(evLab, dl)
-            else if bar_index - S.swBar > iDispWin
+            if S.state == 2 and bar_index - S.swBar > iDispWin
                 S.active := false
                 S.state  := 11
                 S.why    := "NO DISPLACEMENT after the sweep"
@@ -1119,7 +1120,7 @@ if runEng
                     array.push(evLab, ml)
                 if iAlMss
                     alert(str.format("{0} {1} - {2} MSS CONFIRMED after {3} sweep + displacement", syminfo.ticker, timeframe.period, bull ? "BULLISH" : "BEARISH", S.liqName), alert.freq_once_per_bar_close)
-            else if bar_index - S.dispBar > iMssWin
+            if S.state == 3 and bar_index - S.dispBar > iMssWin
                 S.active := false
                 S.state  := 11
                 S.why    := "NO MSS - internal structure never broke"
@@ -1169,7 +1170,7 @@ if runEng
                         array.push(cands, b2SH)
                     if not na(b1SH) and b1SH > eLvl
                         array.push(cands, b1SH)
-                else
+                if not bull
                     if not na(b2SL) and b2SL < eLvl
                         array.push(cands, b2SL)
                     if not na(b1SL) and b1SL < eLvl
@@ -1257,22 +1258,23 @@ if runEng
                 S.tpOk   := rrOk
                 F.used   := true
 
+                bool blocked = wide or (not rrOk) or (iPdStrict and not pdOk)
                 if wide
                     S.active := false
                     S.state  := 11
                     S.why    := str.format("NO TRADE - SL TOO WIDE ({0} > max {1})", f_px(rk), f_px(maxR))
                     f_freeze(S)
-                else if not rrOk
+                if not wide and not rrOk
                     S.active := false
                     S.state  := 11
                     S.why    := "NO TRADE - INSUFFICIENT TARGET SPACE (RR to TP1 below minimum)"
                     f_freeze(S)
-                else if iPdStrict and not pdOk
+                if not wide and rrOk and iPdStrict and not pdOk
                     S.active := false
                     S.state  := 11
                     S.why    := bull ? "NO TRADE - ENTRY NOT IN DISCOUNT" : "NO TRADE - ENTRY NOT IN PREMIUM"
                     f_freeze(S)
-                else
+                if not blocked
                     S.state  := 5
                     S.armBar := bar_index
                     S.why    := str.format("Targets: TP1 R {0} / TP2 R {1} / TP3 R {2}", f_num(rr1), f_num(rr2), f_num(rr3))
@@ -1311,12 +1313,13 @@ if runEng
 
         // -- 11.6 Targets and stop management after the entry --------------------------------------
         if S.state >= 7 and S.state < 11
-            if not na(S.sl) and ((bull and low <= S.sl) or (not bull and high >= S.sl))
+            bool slHit = not na(S.sl) and ((bull and low <= S.sl) or (not bull and high >= S.sl))
+            if slHit
                 S.active := false
                 S.state  := 11
                 S.why    := "STOP HIT - analytical stop reached"
                 f_freeze(S)
-            else
+            if not slHit
                 if not S.t1 and not na(S.tp1) and (bull ? high >= S.tp1 : low <= S.tp1)
                     S.t1   := true
                     S.state := 8
@@ -1349,7 +1352,7 @@ if iShowLiq
         color lc = f_stateCol(L.state)
         if na(L.ln)
             L.ln := line.new(bar_index, L.price, bar_index, L.price, xloc = xloc.bar_index, color = lc, style = line.style_dashed, width = 1)
-        else
+        if not na(L.ln)
             line.set_xy1(L.ln, line.get_x1(L.ln), L.price)
             line.set_xy2(L.ln, bar_index, L.price)
             line.set_color(L.ln, lc)
@@ -1358,11 +1361,11 @@ if iShowLiq
             string ltx = str.format("{0}\n{1}", L.name, f_stateTxt(L.state))
             if na(L.lb)
                 L.lb := label.new(bar_index, L.price, ltx, xloc = xloc.bar_index, yloc = yloc.price, color = lc, style = label.style_label_left, size = size.tiny)
-            else
+            if not na(L.lb)
                 label.set_xy(L.lb, bar_index, L.price)
                 label.set_text(L.lb, ltx)
                 label.set_color(L.lb, lc)
-        else if not na(L.lb)
+        if not iVLabels and not na(L.lb)
             label.delete(L.lb)
             L.lb := na
 
@@ -1737,7 +1740,7 @@ if iOn and iVState
         float sy = high + atr * 1.5
         if na(stateLab)
             stateLab := label.new(bar_index, sy, mktState, xloc = xloc.bar_index, yloc = yloc.price, color = color.new(mktCol, 5), style = label.style_label_left, size = size.normal)
-        else
+        if not na(stateLab)
             label.set_xy(stateLab, bar_index, sy)
             label.set_text(stateLab, mktState)
             label.set_color(stateLab, color.new(mktCol, 5))
