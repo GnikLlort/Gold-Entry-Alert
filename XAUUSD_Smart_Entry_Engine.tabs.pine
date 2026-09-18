@@ -437,6 +437,12 @@ f_lvlSet(array<Lvl> lv, string nm, float p, int kind) =>
 				Lm.state := 0
 				Lm.ext   := na
 				Lm.bar   := bar_index
+				if not na(Lm.ln)
+					line.delete(Lm.ln)
+					Lm.ln := na
+				if not na(Lm.lb)
+					label.delete(Lm.lb)
+					Lm.lb := na
 			Lm.kind := kind
 		if idx < 0
 			array.push(lv, Lvl.new(nm, p, kind, 0, bar_index, na, 1, false, na, na))
@@ -714,11 +720,12 @@ if newNy
 f_sessBox(int sb, bool endS, float hi, float lo, string nm, color col) =>
 	if endS and not na(hi) and not na(lo) and iSessBox
 		int eb = bar_index - 1
-		if sb >= 0 and eb > sb
-			box bb = box.new(sb, hi, eb, lo, xloc = xloc.bar_index, border_color = color.new(col, 55), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(col, 92))
+		int sbc = math.max(sb, bar_index - 4900)
+		if sbc >= 0 and eb > sbc
+			box bb = box.new(sbc, hi, eb, lo, xloc = xloc.bar_index, border_color = color.new(col, 55), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(col, 92))
 			array.push(sessBx, bb)
 			if iVLabels
-				label ll = label.new(sb, hi, nm, xloc = xloc.bar_index, yloc = yloc.price, color = color.new(col, 45), style = label.style_label_left, size = size.tiny)
+				label ll = label.new(sbc, hi, nm, xloc = xloc.bar_index, yloc = yloc.price, color = color.new(col, 45), style = label.style_label_left, size = size.tiny)
 				array.push(sessLb, ll)
 			while array.size(sessBx) > 9
 				box.delete(array.shift(sessBx))
@@ -967,10 +974,11 @@ f_makeOb(int dir, float obTop, float obBot, int obBar) =>
 		color oc = dir == 1 ? cBull : cBear
 		box   obx = na
 		label olb = na
+		int   bx0 = math.max(obBar, bar_index - 4900)
 		if iShowOb
-			obx := box.new(obBar, obTop, bar_index, obBot, xloc = xloc.bar_index, border_color = color.new(oc, 30), border_width = 1, border_style = line.style_dashed, bgcolor = color.new(oc, 90))
+			obx := box.new(bx0, obTop, bar_index, obBot, xloc = xloc.bar_index, border_color = color.new(oc, 30), border_width = 1, border_style = line.style_dashed, bgcolor = color.new(oc, 90))
 			if iVLabels
-				olb := label.new(obBar, dir == 1 ? obTop : obBot, dir == 1 ? "BULL OB" : "BEAR OB", xloc = xloc.bar_index, yloc = yloc.price, color = color.new(oc, 25), style = label.style_label_left, size = size.tiny)
+				olb := label.new(bx0, dir == 1 ? obTop : obBot, dir == 1 ? "BULL OB" : "BEAR OB", xloc = xloc.bar_index, yloc = yloc.price, color = color.new(oc, 25), style = label.style_label_left, size = size.tiny)
 		array.push(obs, Ob.new(dir, obTop, obBot, obBar, false, obx, olb))
 	bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
 	_r
@@ -1057,8 +1065,13 @@ if iShowPd and not na(drTop) and not na(drBot) and drTop > drBot
 		pdTop := drTop
 		pdBot := drBot
 	if not needNewPd
+		int pdxCur = math.max(0, bar_index - iPdLook)
+		pdxCur := math.max(pdxCur, bar_index - 4900)
+		box.set_left(bxPrem, pdxCur)
 		box.set_right(bxPrem, bar_index)
+		box.set_left(bxDisc, pdxCur)
 		box.set_right(bxDisc, bar_index)
+		line.set_x1(lnEq, pdxCur)
 		line.set_x2(lnEq, bar_index)
 
 // ==================================================================================================
@@ -1365,11 +1378,21 @@ if iShowLiq and array.size(lvls) > 0
 		Lvl L = array.get(lvls, i)
 		if na(L.price)
 			continue
+		if L.state == 4 or L.state == 5
+			if not na(L.ln)
+				line.delete(L.ln)
+				L.ln := na
+			if not na(L.lb)
+				label.delete(L.lb)
+				L.lb := na
+			continue
 		color lc = f_stateCol(L.state)
+		int xStart = math.max(nz(L.bar, 0), bar_index - math.min(iVisBars, 4900))
+		xStart := math.max(xStart, bar_index - 4900)
 		if na(L.ln)
-			L.ln := line.new(bar_index, L.price, bar_index, L.price, xloc = xloc.bar_index, color = lc, style = line.style_dashed, width = 1)
+			L.ln := line.new(xStart, L.price, bar_index, L.price, xloc = xloc.bar_index, color = lc, style = line.style_dashed, width = 1)
 		if not na(L.ln)
-			line.set_xy1(L.ln, line.get_x1(L.ln), L.price)
+			line.set_xy1(L.ln, xStart, L.price)
 			line.set_xy2(L.ln, bar_index, L.price)
 			line.set_color(L.ln, lc)
 			line.set_style(L.ln, L.state == 3 ? line.style_solid : line.style_dashed)
