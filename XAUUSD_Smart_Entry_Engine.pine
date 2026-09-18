@@ -1037,8 +1037,8 @@ if iShowPd and not na(drTop) and not na(drBot) and drTop > drBot
         if not na(lnEq)
             line.delete(lnEq)
         int pdx = math.max(0, bar_index - iPdLook)
-        bxPrem := box.new(pdx, drTop, bar_index, drEq, xloc = xloc.bar_index, border_color = color.new(cBear, 75), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(cBear, 94), text = iVLabels ? "PREMIUM" : "", text_size = size.tiny, text_halign = text.align_right, text_valign = text.valign_top)
-        bxDisc := box.new(pdx, drEq, bar_index, drBot, xloc = xloc.bar_index, border_color = color.new(cBull, 75), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(cBull, 94), text = iVLabels ? "DISCOUNT" : "", text_size = size.tiny, text_halign = text.align_right, text_valign = text.valign_bottom)
+        bxPrem := box.new(pdx, drTop, bar_index, drEq, xloc = xloc.bar_index, border_color = color.new(cBear, 75), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(cBear, 94), text = iVLabels ? "PREMIUM" : "", text_size = size.tiny, text_halign = text.align_right, text_valign = text.align_top)
+        bxDisc := box.new(pdx, drEq, bar_index, drBot, xloc = xloc.bar_index, border_color = color.new(cBull, 75), border_width = 1, border_style = line.style_dotted, bgcolor = color.new(cBull, 94), text = iVLabels ? "DISCOUNT" : "", text_size = size.tiny, text_halign = text.align_right, text_valign = text.align_bottom)
         lnEq := line.new(pdx, drEq, bar_index, drEq, xloc = xloc.bar_index, color = color.new(cNeut, 25), style = line.style_dashed, width = 1)
         if iVLabels
             label.new(bar_index, drEq, str.format("50%  {0}", f_px(drEq)), xloc = xloc.bar_index, yloc = yloc.price, color = color.new(cNeut, 30), style = label.style_label_left, size = size.tiny)
