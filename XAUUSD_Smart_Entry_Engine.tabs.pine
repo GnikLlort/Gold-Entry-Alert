@@ -424,11 +424,12 @@ f_htfOk(int dir, int b1, int b2, bool useFilter, string sens) =>
 f_lvlSet(array<Lvl> lv, string nm, float p, int kind) =>
 	if not na(p)
 		int idx = -1
-		for j = 0 to array.size(lv) - 1
-			Lvl Lj = array.get(lv, j)
-			if Lj.name == nm
-				idx := j
-				break
+		if array.size(lv) > 0
+			for j = 0 to array.size(lv) - 1
+				Lvl Lj = array.get(lv, j)
+				if Lj.name == nm
+					idx := j
+					break
 		if idx >= 0
 			Lvl Lm = array.get(lv, idx)
 			if Lm.price != p
@@ -446,16 +447,17 @@ f_lvlSet(array<Lvl> lv, string nm, float p, int kind) =>
 f_lvlDyn(array<Lvl> lv, string nm, float p, int kind, float tol) =>
 	if not na(p)
 		bool merged = false
-		for j = 0 to array.size(lv) - 1
-			Lvl Lj = array.get(lv, j)
-			if Lj.dyn and Lj.kind == kind and not na(Lj.price) and math.abs(Lj.price - p) <= tol
-				Lj.price := kind == -1 ? math.max(Lj.price, p) : math.min(Lj.price, p)
-				Lj.hits  := Lj.hits + 1
-				Lj.bar   := bar_index
-				if Lj.hits > 1
-					Lj.name := (kind == -1 ? "EQ HIGH x" : "EQ LOW x") + str.tostring(Lj.hits)
-				merged := true
-				break
+		if array.size(lv) > 0
+			for j = 0 to array.size(lv) - 1
+				Lvl Lj = array.get(lv, j)
+				if Lj.dyn and Lj.kind == kind and not na(Lj.price) and math.abs(Lj.price - p) <= tol
+					Lj.price := kind == -1 ? math.max(Lj.price, p) : math.min(Lj.price, p)
+					Lj.hits  := Lj.hits + 1
+					Lj.bar   := bar_index
+					if Lj.hits > 1
+						Lj.name := (kind == -1 ? "EQ HIGH x" : "EQ LOW x") + str.tostring(Lj.hits)
+					merged := true
+					break
 		if not merged
 			array.push(lv, Lvl.new(nm, p, kind, 0, bar_index, na, 1, true, na, na))
 	bool _r = true      // placeholder return - keeps the trailing if / for block out of the function return position
@@ -778,7 +780,7 @@ string nwName  = ""
 float  nwPrice = na
 float  nwExt   = na
 
-if runEng
+if runEng and array.size(lvls) > 0
 	float pen = math.max(iSweepAbs, atr * iSweepATR)
 	float app = atr * iAppATR
 	for i = 0 to array.size(lvls) - 1
@@ -886,10 +888,11 @@ if nwDir != 0
 	bool sessOk = (not iSessFilter) or (inAsia and iTradeAsia) or (inLon and iTradeLon) or (inNy and iTradeNy)
 	bool newsOk = (not iNewsBlock) or (not newsRisk)
 	int  actCnt = 0
-	for i = 0 to array.size(setups) - 1
-		Setup Si = array.get(setups, i)
-		if Si.active
-			actCnt += 1
+	if array.size(setups) > 0
+		for i = 0 to array.size(setups) - 1
+			Setup Si = array.get(setups, i)
+			if Si.active
+				actCnt += 1
 	if actCnt < iMaxSetups and htfOk and sessOk and newsOk and volOk
 		float mssLvl = nwDir == 1 ? sSH : sSL
 		float invLvl = nwDir == 1 ? sSL : sSH
@@ -1062,7 +1065,7 @@ if iShowPd and not na(drTop) and not na(drBot) and drTop > drBot
 // 11 - SETUP STATE MACHINE  (sweep -> displacement -> MSS -> FVG -> retracement -> entry -> targets)
 // ==================================================================================================
 
-if runEng
+if runEng and array.size(setups) > 0
 	for i = 0 to array.size(setups) - 1
 		Setup S = array.get(setups, i)
 		if not S.active
@@ -1166,14 +1169,15 @@ if runEng
 
 				// ---- target engine: real liquidity / structure above (below) the entry ----------
 				array<float> cands = array.new_float(0)
-				for k = 0 to array.size(lvls) - 1
-					Lvl Lc = array.get(lvls, k)
-					if na(Lc.price)
-						continue
-					if bull and Lc.kind == -1 and Lc.price > eLvl
-						array.push(cands, Lc.price)
-					if not bull and Lc.kind == 1 and Lc.price < eLvl
-						array.push(cands, Lc.price)
+				if array.size(lvls) > 0
+					for k = 0 to array.size(lvls) - 1
+						Lvl Lc = array.get(lvls, k)
+						if na(Lc.price)
+							continue
+						if bull and Lc.kind == -1 and Lc.price > eLvl
+							array.push(cands, Lc.price)
+						if not bull and Lc.kind == 1 and Lc.price < eLvl
+							array.push(cands, Lc.price)
 				if bull
 					if not na(b2SH) and b2SH > eLvl
 						array.push(cands, b2SH)
@@ -1184,25 +1188,28 @@ if runEng
 						array.push(cands, b2SL)
 					if not na(b1SL) and b1SL < eLvl
 						array.push(cands, b1SL)
-				for k = 0 to array.size(fvgs) - 1
-					Fvg Fc = array.get(fvgs, k)
-					if bull and Fc.dir == -1 and not na(Fc.bot) and Fc.bot > eLvl
-						array.push(cands, Fc.bot)
-					if not bull and Fc.dir == 1 and not na(Fc.top) and Fc.top < eLvl
-						array.push(cands, Fc.top)
-				array.sort(cands)
-				if not bull
-					array.reverse(cands)
+				if array.size(fvgs) > 0
+					for k = 0 to array.size(fvgs) - 1
+						Fvg Fc = array.get(fvgs, k)
+						if bull and Fc.dir == -1 and not na(Fc.bot) and Fc.bot > eLvl
+							array.push(cands, Fc.bot)
+						if not bull and Fc.dir == 1 and not na(Fc.top) and Fc.top < eLvl
+							array.push(cands, Fc.top)
+				if array.size(cands) > 0
+					array.sort(cands)
+					if not bull
+						array.reverse(cands)
 
 				array<float> tpArr = array.new_float(0)
 				float sepD  = math.max(rk * iTpSep, atr * 0.10)
 				float lastT = na
-				for m = 0 to array.size(cands) - 1
-					float cv = array.get(cands, m)
-					bool okT = bull ? (cv >= eLvl + rk * iMinRR and (na(lastT) or cv >= lastT + sepD)) : (cv <= eLvl - rk * iMinRR and (na(lastT) or cv <= lastT - sepD))
-					if okT and array.size(tpArr) < 3
-						array.push(tpArr, cv)
-						lastT := cv
+				if array.size(cands) > 0
+					for m = 0 to array.size(cands) - 1
+						float cv = array.get(cands, m)
+						bool okT = bull ? (cv >= eLvl + rk * iMinRR and (na(lastT) or cv >= lastT + sepD)) : (cv <= eLvl - rk * iMinRR and (na(lastT) or cv <= lastT - sepD))
+						if okT and array.size(tpArr) < 3
+							array.push(tpArr, cv)
+							lastT := cv
 
 				float fx1 = bull ? eLvl + rk * iRR1 : eLvl - rk * iRR1
 				float fx2 = bull ? eLvl + rk * iRR2 : eLvl - rk * iRR2
@@ -1353,7 +1360,7 @@ if runEng
 // ==================================================================================================
 
 // -- 12.1 Liquidity level rays + state labels ------------------------------------------------------
-if iShowLiq
+if iShowLiq and array.size(lvls) > 0
 	for i = 0 to array.size(lvls) - 1
 		Lvl L = array.get(lvls, i)
 		if na(L.price)
@@ -1393,11 +1400,12 @@ if array.size(evLin) > 0
 			array.remove(evLin, i)
 
 // -- 12.3 Keep live setup drawings attached to the current bar -------------------------------------
-for i = 0 to array.size(setups) - 1
-	Setup Sp = array.get(setups, i)
-	if Sp.active and Sp.state >= 5
-		f_draw(Sp)
-		f_push(Sp)
+if array.size(setups) > 0
+	for i = 0 to array.size(setups) - 1
+		Setup Sp = array.get(setups, i)
+		if Sp.active and Sp.state >= 5
+			f_draw(Sp)
+			f_push(Sp)
 
 // -- 12.4 Housekeeping: dynamic liquidity levels and finished setups -------------------------------
 if runEng
@@ -1415,15 +1423,17 @@ if runEng
 						label.delete(Lp.lb)
 					array.remove(lvls, i)
 	int dc = 0
-	for i = 0 to array.size(lvls) - 1
-		if array.get(lvls, i).dyn
-			dc += 1
-	while dc > iMaxDyn
-		int rm = -1
+	if array.size(lvls) > 0
 		for i = 0 to array.size(lvls) - 1
 			if array.get(lvls, i).dyn
-				rm := i
-				break
+				dc += 1
+	while dc > iMaxDyn
+		int rm = -1
+		if array.size(lvls) > 0
+			for i = 0 to array.size(lvls) - 1
+				if array.get(lvls, i).dyn
+					rm := i
+					break
 		if rm >= 0
 			Lvl Lr = array.get(lvls, rm)
 			if not na(Lr.ln)
@@ -1435,15 +1445,17 @@ if runEng
 		else
 			dc := 0
 	int fc = 0
-	for i = 0 to array.size(setups) - 1
-		if not array.get(setups, i).active
-			fc += 1
-	while fc > iMaxHist
-		int rms = -1
+	if array.size(setups) > 0
 		for i = 0 to array.size(setups) - 1
 			if not array.get(setups, i).active
-				rms := i
-				break
+				fc += 1
+	while fc > iMaxHist
+		int rms = -1
+		if array.size(setups) > 0
+			for i = 0 to array.size(setups) - 1
+				if not array.get(setups, i).active
+					rms := i
+					break
 		if rms >= 0
 			Setup Sr = array.get(setups, rms)
 			f_kill(Sr)
@@ -1460,15 +1472,16 @@ if runEng
 float  nearDist  = na
 string nearName  = "NONE"
 int    nearState = 0
-for i = 0 to array.size(lvls) - 1
-	Lvl Ln = array.get(lvls, i)
-	if na(Ln.price) or Ln.state == 4 or Ln.state == 5
-		continue
-	float dd = math.abs(close - Ln.price)
-	if na(nearDist) or dd < nearDist
-		nearDist  := dd
-		nearName  := Ln.name
-		nearState := Ln.state
+if array.size(lvls) > 0
+	for i = 0 to array.size(lvls) - 1
+		Lvl Ln = array.get(lvls, i)
+		if na(Ln.price) or Ln.state == 4 or Ln.state == 5
+			continue
+		float dd = math.abs(close - Ln.price)
+		if na(nearDist) or dd < nearDist
+			nearDist  := dd
+			nearName  := Ln.name
+			nearState := Ln.state
 
 // Newest setup that is still live, or that finished very recently ----------------------------------
 int curIdx = -1
@@ -1500,7 +1513,7 @@ string dPd     = "--"
 int    curState = 0
 int    curDir   = 0
 
-if curIdx >= 0
+if curIdx >= 0 and curIdx < array.size(setups)
 	Setup C = array.get(setups, curIdx)
 	curState := C.state
 	curDir   := C.dir
@@ -1526,7 +1539,7 @@ if curIdx >= 0
 
 string mktState = "WAIT"
 color  mktCol   = cNeut
-if curIdx >= 0
+if curIdx >= 0 and curIdx < array.size(setups)
 	if curState == 11
 		mktState := "INVALIDATED"
 		mktCol   := color.new(cBear, 25)
@@ -1554,7 +1567,7 @@ else
 
 // Market story (chronological sequence) -------------------------------------------------------------
 array<string> story = array.new_string(0)
-if curIdx >= 0
+if curIdx >= 0 and curIdx < array.size(setups)
 	Setup C2 = array.get(setups, curIdx)
 	bool b2l = C2.dir == 1
 	array.push(story, str.format("1. Higher-timeframe bias: {0} {1}", alignTxt, b2l ? (b1 >= 0 and b2 >= 0 ? "✓" : "against") : (b1 <= 0 and b2 <= 0 ? "✓" : "against")))
@@ -1683,9 +1696,10 @@ if barstate.islast and iShowDash
 	if iShowStory
 		f_sec(dash, rr, "MARKET STORY")
 		rr += 1
-		for i = 0 to array.size(story) - 1
-			f_wide(dash, rr, array.get(story, i), i < 10 ? color.new(cTxt, 10) : cTxt)
-			rr += 1
+		if array.size(story) > 0
+			for i = 0 to array.size(story) - 1
+				f_wide(dash, rr, array.get(story, i), i < 10 ? color.new(cTxt, 10) : cTxt)
+				rr += 1
 		f_blank(dash, rr)
 		rr += 1
 
@@ -1695,13 +1709,13 @@ if barstate.islast and iShowDash
 		rr += 1
 		f_kv(dash, rr, "Market state", mktState, mktCol)
 		rr += 1
-		f_kv(dash, rr, "Sweep extreme", curIdx >= 0 ? f_px(array.get(setups, curIdx).ext) : "--", cSwp)
+		f_kv(dash, rr, "Sweep extreme", curIdx >= 0 and curIdx < array.size(setups) ? f_px(array.get(setups, curIdx).ext) : "--", cSwp)
 		rr += 1
-		f_kv(dash, rr, "MSS level", curIdx >= 0 ? f_px(array.get(setups, curIdx).mssLevel) : "--", cTxt)
+		f_kv(dash, rr, "MSS level", curIdx >= 0 and curIdx < array.size(setups) ? f_px(array.get(setups, curIdx).mssLevel) : "--", cTxt)
 		rr += 1
-		f_kv(dash, rr, "Structure stop", curIdx >= 0 ? f_px(array.get(setups, curIdx).invLevel) : "--", cTxt)
+		f_kv(dash, rr, "Structure stop", curIdx >= 0 and curIdx < array.size(setups) ? f_px(array.get(setups, curIdx).invLevel) : "--", cTxt)
 		rr += 1
-		f_kv(dash, rr, "Risk (points)", curIdx >= 0 ? f_px(array.get(setups, curIdx).risk) : "--", cBear)
+		f_kv(dash, rr, "Risk (points)", curIdx >= 0 and curIdx < array.size(setups) ? f_px(array.get(setups, curIdx).risk) : "--", cBear)
 		rr += 1
 		f_kv(dash, rr, "Dealing range", na(drTop) ? "--" : str.format("{0} - {1}", f_px(drBot), f_px(drTop)), cTxt)
 		rr += 1
