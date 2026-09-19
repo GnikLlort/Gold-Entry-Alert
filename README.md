@@ -134,20 +134,19 @@ Every component can be switched off individually (Visuals group).
 
 ## 5. Dashboard
 
-A compact panel (top-right by default) with:
+A clean, mobile-friendly panel positioned in the top-right corner. It automatically adjusts between **WAITING** mode and **ACTIVE SETUP** mode, keeping only important information visible so your charts remain clean on both mobile phones and desktop displays.
 
-* HTF 1 / HTF 2 bias, alignment (`BULLISH / BEARISH / NEUTRAL / MIXED`), structure-TF bias
-* Session and volatility regime (`LOW / NORMAL / HIGH / EXTREME`)
-* Nearest liquidity pool, distance in price and ATR, and its state
-* Sequence checklist: liquidity swept → displacement → MSS → FVG
-* Setup direction, state, **quality score /100**, premium / discount location
-* Entry, SL, TP1, TP2, TP3 and R:R
-* **Market Story** — the sequence in chronological order with ✓ markers
-* Optional detailed info panel (PDH/PDL, PWH/PWL, session levels, ATR, news window, MSS level,
-  structure stop, risk in points, note)
-* `CURRENT STATE` line
+### Layout modes & text sizing
+* **`Compact (Mobile)` (default)**: Streamlined 8–11 row table designed for narrow mobile screens and uncluttered trading.
+  * In **Waiting State**: Header with symbol & session, Market State (`WAIT / WATCH`), HTF Bias summary, Volatility / News risk, Status Note (explaining why it is waiting), Nearest Liquidity Pool, Distance in points and ATR, and Pool State.
+  * In **Active Setup State**: Market State (`ARMED / ENTRY ZONE / LONG / SHORT`), HTF Bias, Volatility, Setup direction & quality score (`/100`), compact Sequence checklist (`Swp ✓ · Disp ✓ · MSS ✓ · FVG ✓`), suggested Entry with Premium/Discount status, Stop Loss with risk in points, Target levels (`TP1 / TP2 / TP3`), R:R profile, and Action Note.
+* **`Detailed`**: Expands into distinct sections for multi-timeframe bias breakdown, individual session highs/lows, and detailed sequence parameters.
+* **Configurable Text Size**: Choose between `Tiny (Mobile)` (default), `Small`, and `Normal`.
+* **Optional Panels (toggled off by default to maintain mobile cleanliness)**:
+  * `Market Story panel (detailed)`: Chronological checklist tracking the setup step-by-step.
+  * `Full levels panel (detailed)`: Complete table of dealing range boundaries, equilibrium (50%), PDH/PDL, and PWH/PWL.
 
-> **The score is a confluence score, NOT a probability of profit.** The panel says so explicitly.
+> **The score is a confluence score, NOT a probability of profit.** The panel displays this footnote explicitly.
 
 ---
 

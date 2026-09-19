@@ -74,10 +74,12 @@ indicator(title = "XAUUSD Smart Entry Engine", shorttitle = "XAU-SMART-ENTRY", o
 // -- 1.1 General ----------------------------------------------------------------------------------
 string gGEN = "01 - GENERAL"
 bool   iOn          = input.bool(true,   "Enable engine", group = gGEN)
-string iSens        = input.string("Balanced", "Signal sensitivity", options = ["Aggressive", "Balanced", "Conservative"], group = gGEN, tooltip = "Aggressive = HTF bias not required. Balanced = HTF must not " + "oppose the trade. Conservative = both HTFs must agree with the trade.")
+string iSens        = input.string("Balanced", "Signal sensitivity", options = ["Aggressive", "Balanced", "Conservative"], group = gGEN, tooltip = "Aggressive = HTF bias not required. Balanced = HTF must not oppose the trade. Conservative = both HTFs must agree with the trade.")
 bool   iShowDash    = input.bool(true,  "Show dashboard", group = gGEN)
-bool   iShowStory   = input.bool(true,  "Show Market Story panel", group = gGEN)
-bool   iShowInfo    = input.bool(true,  "Show detailed info panel", group = gGEN)
+string iDashMode    = input.string("Compact (Mobile)", "Dashboard layout", options = ["Compact (Mobile)", "Detailed"], group = gGEN)
+string iDashTextSize = input.string("Tiny (Mobile)", "Dashboard text size", options = ["Tiny (Mobile)", "Small", "Normal"], group = gGEN)
+bool   iShowStory   = input.bool(false, "Show Market Story panel (detailed)", group = gGEN)
+bool   iShowInfo    = input.bool(false, "Show full levels panel (detailed)", group = gGEN)
 int    iMaxSetups   = input.int(1,  "Maximum active setups", minval = 1, maxval = 3, group = gGEN)
 int    iMaxHist     = input.int(3,  "Historical setups kept on chart", minval = 0, maxval = 12, group = gGEN)
 int    iVisBars     = input.int(350, "Keep visuals for (bars)", minval = 50, maxval = 2000, group = gGEN)
@@ -1612,167 +1614,159 @@ else
 	array.push(story, "5. Status: WAIT")
 
 // ==================================================================================================
-// 14 - DASHBOARD  (compact market map)
+// 14 - DASHBOARD  (clean, mobile-friendly market map)
 // ==================================================================================================
 
+string dTxtSize = iDashTextSize == "Small" ? size.small : iDashTextSize == "Normal" ? size.normal : size.tiny
+
+f_hdr(table t, int r, string k, string v) =>
+	table.cell(t, 0, r, k, text_color = cTxt, bgcolor = color.new(cDash, 10), text_size = dTxtSize, text_halign = text.align_left)
+	table.cell(t, 1, r, v, text_color = color.new(cTxt, 20), bgcolor = color.new(cDash, 10), text_size = dTxtSize, text_halign = text.align_right)
+
 f_kv(table t, int r, string k, string v, color vc) =>
-	table.cell(t, 0, r, k, text_color = color.new(cTxt, 35), bgcolor = cDash, text_size = size.small, text_halign = text.align_left)
-	table.cell(t, 1, r, v, text_color = vc, bgcolor = cDash, text_size = size.small, text_halign = text.align_right)
+	table.cell(t, 0, r, k, text_color = color.new(cTxt, 30), bgcolor = cDash, text_size = dTxtSize, text_halign = text.align_left)
+	table.cell(t, 1, r, v, text_color = vc, bgcolor = cDash, text_size = dTxtSize, text_halign = text.align_right)
 
 f_sec(table t, int r, string k) =>
-	table.cell(t, 0, r, k, text_color = cTxt, bgcolor = color.new(cDash, 20), text_size = size.small, text_halign = text.align_left)
-	table.cell(t, 1, r, "", text_color = cTxt, bgcolor = color.new(cDash, 20), text_size = size.small)
+	table.cell(t, 0, r, k, text_color = cTxt, bgcolor = color.new(cDash, 20), text_size = dTxtSize, text_halign = text.align_left)
+	table.cell(t, 1, r, "", text_color = cTxt, bgcolor = color.new(cDash, 20), text_size = dTxtSize)
 
 f_wide(table t, int r, string k, color vc) =>
-	table.cell(t, 0, r, k, text_color = vc, bgcolor = cDash, text_size = size.small, text_halign = text.align_left)
-	table.cell(t, 1, r, "", text_color = vc, bgcolor = cDash, text_size = size.small)
+	table.cell(t, 0, r, k, text_color = vc, bgcolor = cDash, text_size = dTxtSize, text_halign = text.align_left)
+	table.cell(t, 1, r, "", text_color = vc, bgcolor = cDash, text_size = dTxtSize)
 
 f_blank(table t, int r) =>
 	table.cell(t, 0, r, "", bgcolor = color.new(cDash, 100), text_size = size.tiny)
 	table.cell(t, 1, r, "", bgcolor = color.new(cDash, 100), text_size = size.tiny)
 
-var table dash = table.new(position.top_right, columns = 2, rows = 70, frame_color = color.new(cTxt, 55), frame_width = 1, border_color = color.new(cTxt, 75), border_width = 1, bgcolor = color.new(cDash, 100))
+var table dash = table.new(position.top_right, columns = 2, rows = 36, frame_color = color.new(cTxt, 65), frame_width = 1, border_color = color.new(cTxt, 80), border_width = 1, bgcolor = color.new(cDash, 100))
 
 if barstate.islast and iShowDash
 	int rr = 0
-	table.cell(dash, 0, rr, "XAUUSD SMART ENTRY ENGINE", text_color = cTxt, bgcolor = color.new(cDash, 15), text_size = size.small, text_halign = text.align_left)
-	table.cell(dash, 1, rr, str.format("{0} {1}", syminfo.ticker, timeframe.period), text_color = cTxt, bgcolor = color.new(cDash, 15), text_size = size.small, text_halign = text.align_right)
+	f_hdr(dash, rr, "⚡ XAUUSD SMART ENGINE", str.format("{0} • {1}", timeframe.period, curSess))
 	rr += 1
 
-	// -- bias --------------------------------------------------------------------------------------
-	f_kv(dash, rr, str.format("HTF 1 ({0})", iHTF1), f_biasTxt(b1), b1 == 1 ? cBull : b1 == -1 ? cBear : cNeut)
-	rr += 1
-	f_kv(dash, rr, str.format("HTF 2 ({0})", iHTF2), f_biasTxt(b2), b2 == 1 ? cBull : b2 == -1 ? cBear : cNeut)
-	rr += 1
-	f_kv(dash, rr, "Alignment", alignTxt, alignTxt == "BULLISH" ? cBull : alignTxt == "BEARISH" ? cBear : cNeut)
-	rr += 1
-	f_kv(dash, rr, str.format("Structure ({0})", iTFS), f_biasTxt(bS), bS == 1 ? cBull : bS == -1 ? cBear : cNeut)
-	rr += 1
-	f_kv(dash, rr, "Session", curSess, cTxt)
-	rr += 1
-	f_kv(dash, rr, "Volatility", str.format("{0} ({1}x)", volTxt, f_num(volRatio)), volRatio >= iVolExt ? cBear : volRatio >= iVolHigh ? color.new(cBear, 35) : volRatio <= iVolLow ? cNeut : cTxt)
-	rr += 1
-	f_blank(dash, rr)
+	f_kv(dash, rr, "Market State", mktState, mktCol)
 	rr += 1
 
-	// -- liquidity ---------------------------------------------------------------------------------
-	f_sec(dash, rr, "LIQUIDITY")
-	rr += 1
-	f_kv(dash, rr, "Nearest", nearName, cLiq)
-	rr += 1
-	f_kv(dash, rr, "Distance", na(nearDist) ? "--" : str.format("{0} ({1} ATR)", f_px(nearDist), f_num(atr > 0 ? nearDist / atr : na)), cTxt)
-	rr += 1
-	f_kv(dash, rr, "Status", f_stateTxt(nearState), f_stateCol(nearState))
-	rr += 1
-	f_kv(dash, rr, "Swept level", curIdx >= 0 ? dLiq : "--", cSwp)
-	rr += 1
-	f_blank(dash, rr)
-	rr += 1
+	string htfSummary = alignTxt + (b1 == 1 and b2 == 1 ? " (H4▲ H1▲)" : b1 == -1 and b2 == -1 ? " (H4▼ H1▼)" : b1 == 1 ? " (H4▲ H1▼)" : b1 == -1 ? " (H4▼ H1▲)" : "")
+	color  htfCol     = alignTxt == "BULLISH" ? cBull : alignTxt == "BEARISH" ? cBear : cNeut
 
-	// -- sequence ----------------------------------------------------------------------------------
-	f_sec(dash, rr, "SEQUENCE")
-	rr += 1
-	f_kv(dash, rr, "Liquidity swept", dSweep, dSweep == "YES" ? cBull : cNeut)
-	rr += 1
-	f_kv(dash, rr, "Displacement", dDisp, dDisp == "YES" ? cBull : cNeut)
-	rr += 1
-	f_kv(dash, rr, "MSS / structure shift", dMss, dMss == "YES" ? cBull : cNeut)
-	rr += 1
-	f_kv(dash, rr, "Fair value gap", dFvg, dFvg == "YES" ? cBull : cNeut)
-	rr += 1
-	f_blank(dash, rr)
-	rr += 1
+	if iDashMode == "Compact (Mobile)"
+		f_kv(dash, rr, "HTF Bias", htfSummary, htfCol)
+		rr += 1
 
-	// -- setup -------------------------------------------------------------------------------------
-	f_sec(dash, rr, "SETUP")
-	rr += 1
-	f_kv(dash, rr, "Direction", curIdx >= 0 ? dDir : "NONE", curDir == 1 ? cBull : curDir == -1 ? cBear : cNeut)
-	rr += 1
-	f_kv(dash, rr, "State", dState, curState == 11 ? cBear : cTxt)
-	rr += 1
-	f_kv(dash, rr, "Quality (confluence)", dScore, dScoreN >= 70 ? cBull : dScoreN >= 45 ? cLiq : cNeut)
-	rr += 1
-	f_kv(dash, rr, "Entry location", dPd, dPd == "DISCOUNT" ? cBull : dPd == "PREMIUM" ? cBear : cNeut)
-	rr += 1
-	f_blank(dash, rr)
-	rr += 1
+		if newsRisk
+			f_kv(dash, rr, "Event Risk", "⚠️ HIGH IMPACT WINDOW", cBear)
+			rr += 1
+		if not newsRisk
+			f_kv(dash, rr, "Volatility", str.format("{0} ({1}x ATR)", volTxt, f_num(volRatio)), volRatio >= iVolExt ? cBear : cTxt)
+			rr += 1
 
-	// -- levels ------------------------------------------------------------------------------------
-	f_sec(dash, rr, "ANALYTICAL LEVELS")
-	rr += 1
-	f_kv(dash, rr, "Entry", dEntry, curDir == 1 ? cBull : curDir == -1 ? cBear : cNeut)
-	rr += 1
-	f_kv(dash, rr, "Stop loss", dSl, cBear)
-	rr += 1
-	f_kv(dash, rr, "TP1", dTp1, cBull)
-	rr += 1
-	f_kv(dash, rr, "TP2", dTp2, cBull)
-	rr += 1
-	f_kv(dash, rr, "TP3", dTp3, cBull)
-	rr += 1
-	f_kv(dash, rr, "R:R", dRR, cTxt)
-	rr += 1
-	f_blank(dash, rr)
-	rr += 1
+		bool hasActiveSetup = curIdx >= 0 and curIdx < array.size(setups) and curState >= 2 and curState != 11 and curState != 12
+		if hasActiveSetup
+			f_kv(dash, rr, "Setup", str.format("{0} • {1}", dDir, f_setupTxt(curState)), curDir == 1 ? cBull : cBear)
+			rr += 1
+			f_kv(dash, rr, "Quality Score", dScore, dScoreN >= 70 ? cBull : dScoreN >= 45 ? cLiq : cNeut)
+			rr += 1
+			string seqStr = str.format("Swp {0} · Disp {1} · MSS {2} · FVG {3}", dSweep == "YES" ? "✓" : "·", dDisp == "YES" ? "✓" : "·", dMss == "YES" ? "✓" : "·", dFvg == "YES" ? "✓" : "·")
+			f_kv(dash, rr, "Sequence", seqStr, cTxt)
+			rr += 1
+			if not na(dEntry) and dEntry != "--"
+				f_kv(dash, rr, "Entry Zone", str.format("{0} ({1})", dEntry, dPd), curDir == 1 ? cBull : cBear)
+				rr += 1
+			if not na(dSl) and dSl != "--"
+				float rPts = array.get(setups, curIdx).risk
+				f_kv(dash, rr, "Stop Loss", str.format("{0} ({1} pts)", dSl, f_num(rPts)), cBear)
+				rr += 1
+			if not na(dTp1) and dTp1 != "--"
+				f_kv(dash, rr, "Targets", str.format("1:{0} 2:{1} 3:{2}", dTp1, dTp2, dTp3), cBull)
+				rr += 1
+			if not na(dRR) and dRR != "--"
+				f_kv(dash, rr, "R:R Profile", dRR, cTxt)
+				rr += 1
+			f_kv(dash, rr, "Action Note", dWhy, color.new(cTxt, 15))
+			rr += 1
+		if not hasActiveSetup
+			f_kv(dash, rr, "Status Note", dWhy, cNeut)
+			rr += 1
+			f_kv(dash, rr, "Nearest Pool", nearName, cLiq)
+			rr += 1
+			f_kv(dash, rr, "Pool Distance", na(nearDist) ? "--" : str.format("{0} ({1} ATR)", f_px(nearDist), f_num(atr > 0 ? nearDist / atr : na)), cTxt)
+			rr += 1
+			f_kv(dash, rr, "Pool State", f_stateTxt(nearState), f_stateCol(nearState))
+			rr += 1
 
-	// -- market story ------------------------------------------------------------------------------
-	if iShowStory
+	if iDashMode == "Detailed"
+		f_sec(dash, rr, "BIAS & ENVIRONMENT")
+		rr += 1
+		f_kv(dash, rr, str.format("HTF 1 ({0})", iHTF1), f_biasTxt(b1), b1 == 1 ? cBull : b1 == -1 ? cBear : cNeut)
+		rr += 1
+		f_kv(dash, rr, str.format("HTF 2 ({0})", iHTF2), f_biasTxt(b2), b2 == 1 ? cBull : b2 == -1 ? cBear : cNeut)
+		rr += 1
+		f_kv(dash, rr, "Alignment", alignTxt, htfCol)
+		rr += 1
+		f_kv(dash, rr, str.format("Structure ({0})", iTFS), f_biasTxt(bS), bS == 1 ? cBull : bS == -1 ? cBear : cNeut)
+		rr += 1
+		f_kv(dash, rr, "Volatility", str.format("{0} ({1}x ATR)", volTxt, f_num(volRatio)), volRatio >= iVolExt ? cBear : cTxt)
+		rr += 1
+		if newsRisk
+			f_kv(dash, rr, "News Window", "HIGH IMPACT ACTIVE", cBear)
+			rr += 1
+
+		f_sec(dash, rr, "LIQUIDITY & SETUP")
+		rr += 1
+		f_kv(dash, rr, "Nearest Pool", str.format("{0} ({1})", nearName, na(nearDist) ? "--" : f_px(nearDist)), cLiq)
+		rr += 1
+		f_kv(dash, rr, "Sequence", str.format("Swp {0} · Disp {1} · MSS {2} · FVG {3}", dSweep == "YES" ? "✓" : "·", dDisp == "YES" ? "✓" : "·", dMss == "YES" ? "✓" : "·", dFvg == "YES" ? "✓" : "·"), cTxt)
+		rr += 1
+		f_kv(dash, rr, "Direction", curIdx >= 0 ? dDir : "NONE", curDir == 1 ? cBull : curDir == -1 ? cBear : cNeut)
+		rr += 1
+		f_kv(dash, rr, "State", dState, curState == 11 ? cBear : cTxt)
+		rr += 1
+		f_kv(dash, rr, "Quality Score", dScore, dScoreN >= 70 ? cBull : dScoreN >= 45 ? cLiq : cNeut)
+		rr += 1
+		f_kv(dash, rr, "Entry Zone", str.format("{0} ({1})", dEntry, dPd), curDir == 1 ? cBull : curDir == -1 ? cBear : cNeut)
+		rr += 1
+		f_kv(dash, rr, "Stop Loss", dSl, cBear)
+		rr += 1
+		f_kv(dash, rr, "Targets", str.format("1:{0} 2:{1} 3:{2}", dTp1, dTp2, dTp3), cBull)
+		rr += 1
+		f_kv(dash, rr, "R:R", dRR, cTxt)
+		rr += 1
+		f_kv(dash, rr, "Note", dWhy, color.new(cTxt, 15))
+		rr += 1
+
+	if iShowStory and rr < 34
 		f_sec(dash, rr, "MARKET STORY")
 		rr += 1
 		if array.size(story) > 0
 			for i = 0 to array.size(story) - 1
-				f_wide(dash, rr, array.get(story, i), i < 10 ? color.new(cTxt, 10) : cTxt)
-				rr += 1
-		f_blank(dash, rr)
+				if rr < 34
+					f_wide(dash, rr, array.get(story, i), i < 10 ? color.new(cTxt, 10) : cTxt)
+					rr += 1
+
+	if iShowInfo and rr < 34
+		f_sec(dash, rr, "KEY LEVELS")
+		rr += 1
+		if rr < 34
+			f_kv(dash, rr, "Dealing Range", na(drTop) ? "--" : str.format("{0} - {1}", f_px(drBot), f_px(drTop)), cTxt)
+			rr += 1
+		if rr < 34
+			f_kv(dash, rr, "Equilibrium 50%", f_px(drEq), cNeut)
+			rr += 1
+		if rr < 34
+			f_kv(dash, rr, "PDH / PDL", str.format("{0} / {1}", f_px(pdh), f_px(pdl)), cTxt)
+			rr += 1
+		if rr < 34
+			f_kv(dash, rr, "PWH / PWL", str.format("{0} / {1}", f_px(pwh), f_px(pwl)), cTxt)
+			rr += 1
+
+	if rr < 35
+		f_wide(dash, rr, "Confluence score, not a probability of profit", color.new(cTxt, 45))
 		rr += 1
 
-	// -- detail panel ------------------------------------------------------------------------------
-	if iShowInfo
-		f_sec(dash, rr, "CURRENT MARKET ANALYSIS")
-		rr += 1
-		f_kv(dash, rr, "Market state", mktState, mktCol)
-		rr += 1
-		f_kv(dash, rr, "Sweep extreme", curIdx >= 0 and curIdx < array.size(setups) ? f_px(array.get(setups, curIdx).ext) : "--", cSwp)
-		rr += 1
-		f_kv(dash, rr, "MSS level", curIdx >= 0 and curIdx < array.size(setups) ? f_px(array.get(setups, curIdx).mssLevel) : "--", cTxt)
-		rr += 1
-		f_kv(dash, rr, "Structure stop", curIdx >= 0 and curIdx < array.size(setups) ? f_px(array.get(setups, curIdx).invLevel) : "--", cTxt)
-		rr += 1
-		f_kv(dash, rr, "Risk (points)", curIdx >= 0 and curIdx < array.size(setups) ? f_px(array.get(setups, curIdx).risk) : "--", cBear)
-		rr += 1
-		f_kv(dash, rr, "Dealing range", na(drTop) ? "--" : str.format("{0} - {1}", f_px(drBot), f_px(drTop)), cTxt)
-		rr += 1
-		f_kv(dash, rr, "Equilibrium (50%)", f_px(drEq), cNeut)
-		rr += 1
-		f_kv(dash, rr, "PDH / PDL", str.format("{0} / {1}", f_px(pdh), f_px(pdl)), cTxt)
-		rr += 1
-		f_kv(dash, rr, "PWH / PWL", str.format("{0} / {1}", f_px(pwh), f_px(pwl)), cTxt)
-		rr += 1
-		f_kv(dash, rr, "Asia H / L", str.format("{0} / {1}", f_px(aHi), f_px(aLo)), cTxt)
-		rr += 1
-		f_kv(dash, rr, "London H / L", str.format("{0} / {1}", f_px(lHi), f_px(lLo)), cTxt)
-		rr += 1
-		f_kv(dash, rr, "NY H / L", str.format("{0} / {1}", f_px(nHi), f_px(nLo)), cTxt)
-		rr += 1
-		f_kv(dash, rr, "ATR", str.format("{0} ({1})", f_px(atr), f_num(volRatio)), cTxt)
-		rr += 1
-		f_kv(dash, rr, "News window", newsRisk ? "ACTIVE - high impact window" : "clear", newsRisk ? cBear : cNeut)
-		rr += 1
-		f_kv(dash, rr, "Note", dWhy, curState == 11 ? cBear : color.new(cTxt, 20))
-		rr += 1
-		f_blank(dash, rr)
-		rr += 1
-
-	// -- current state -----------------------------------------------------------------------------
-	f_sec(dash, rr, "CURRENT STATE")
-	rr += 1
-	f_kv(dash, rr, mktState, dWhy, mktCol)
-	rr += 1
-	f_wide(dash, rr, "Confluence score, not a probability of profit", color.new(cTxt, 45))
-	rr += 1
-
-	// clear any rows that are not used on this update
-	while rr < 70
+	while rr < 36
 		f_blank(dash, rr)
 		rr += 1
 
